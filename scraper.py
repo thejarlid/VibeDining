@@ -1,10 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict, field
 import os
 import argparse
 import csv
 import pandas as pd
 import requests
 import asyncio
+from tqdm import tqdm
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
 
@@ -18,9 +19,10 @@ class PlaceData:
     name: str
     place_id: str
     json_data: str
+    attributes: list[str] = field(default_factory=list)
 
 
-async def scrape_places(place_data: list[PlaceData]):
+async def scrape_places_for_attributes(csv_file: str, place_data: list[PlaceData]):
     print(f"Scraping {len(place_data)} places")
     # Once we have the base data and information we need to scrape the about section
     # on the site to get details about the place wrt to the atmosphere, vibe, offerings, etc.
@@ -28,32 +30,40 @@ async def scrape_places(place_data: list[PlaceData]):
     # just by testing on my small dataset (~400 places) we'll hit that with 3 runs
     url_base = "https://www.google.com/maps/place/?q=place_id:"
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)
-        for placed in place_data:
-            print(f"Scraping {placed.name}")
+        browser = await p.chromium.launch()
+        for placed in tqdm(place_data, desc="Scraping places"):
+            tqdm.write(f"Scraping {placed.name}")
             url = url_base + placed.place_id
             page = await browser.new_page()
-            await page.goto(url)
-            about_button = page.locator('#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div:nth-child(3) > div > div > button:nth-child(4)')
-            await about_button.click()
-            await page.wait_for_timeout(1000)
-            second_spans = page.locator('li.hpLkke span:nth-of-type(2)')
-            texts = await second_spans.all_text_contents()
-            print(texts)
-            # about_li = page.locator('li.hpLkke')
-            # print(await about_li.count())
-            # await page.wait_for_timeout(1000)
-            # for i in range(await about_li.count()):
-            #     li_element = about_li.nth(i)
-            #     second_span = li_element.locator('span:nth-child(2)')
+            try:
+                await page.goto(url)
+            except Exception as e:
+                tqdm.write(f"Error navigating to {url}: {e}")
+                await page.close()
+                continue
 
-            #     # Check if second span exists
-            #     if await second_span.count() > 0:
-            #         text = await second_span.text_content()
-            #         print(f"Li {i}: Second span text = '{text.strip()}'")
-            #     else:
-            #         print(f"Li {i}: No second span found")
-            break
+            about_button = page.locator('button.hh2c6').filter(has=page.locator('div.Gpq6kf', has_text='About'))
+            if await about_button.count() == 0:
+                tqdm.write(f"No about button found for {placed.name}")
+                await page.close()
+                continue
+            await about_button.click()
+            await page.wait_for_selector("li.hpLkke span:nth-of-type(2)", state="visible", timeout=1000)
+            second_spans = page.locator('li.hpLkke span:nth-of-type(2)')
+            if await second_spans.count() == 0:
+                tqdm.write(f"No attributes found for {placed.name}")
+                await page.close()
+                continue
+            attributes = await second_spans.all_text_contents()
+            placed.attributes = attributes
+            await page.close()
+
+        with open(f"{csv_file.split('.')[0]}_place_data_with_attributes.csv", 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=['name', 'place_id', 'json_data', 'attributes'])
+            writer.writeheader()
+            for record in place_data:
+                writer.writerow(asdict(record))  # Convert dataclass to dictionary
+        print(f"Saved {len(place_data)} places to place_data_with_attributes.csv")
 
 
 def process_csv_file(csv_file: str):
@@ -91,12 +101,13 @@ def process_csv_file(csv_file: str):
         place_data.append({
             'name': place,
             'place_id': data['result']['place_id'],
-            'json_data': response.text
+            'json_data': response.text,
+            'attributes': []
         })
         print(f"Processed {place}")
 
     with open(f"{csv_file.split('.')[0]}_place_data.csv", 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['name', 'place_id', 'json_data'])
+        writer = csv.DictWriter(f, fieldnames=['name', 'place_id', 'json_data'], extrasaction='ignore')
         writer.writeheader()
         writer.writerows(place_data)
     print(f"Saved {len(place_data)} places to place_data.csv")
@@ -124,7 +135,7 @@ async def main():
         process_csv_directory(path)
     elif os.path.isfile(path) and path.endswith('.csv'):
         place_data = process_csv_file(path)
-        await scrape_places(place_data)
+        await scrape_places_for_attributes(path, place_data)
     else:
         raise ValueError(f"'{path}' is neither a valid directory nor a CSV file")
 
