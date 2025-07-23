@@ -4,11 +4,14 @@ import time
 import os
 import argparse
 import csv
+import aiofiles
+import aiocsv
 import json
 import pandas as pd
 import requests
 import asyncio
 import httpx
+from aiocsv import AsyncDictWriter
 from tqdm import tqdm
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
@@ -252,32 +255,26 @@ class PlaceResolver:
         self.csv_file = csv_file
         self.stale_days = stale_days
         self.client = None
+
+        # checkpointing variables
         self.checkpoint = {}
-        self.checkpoint_filename = None
-        self.checkpoint_file = None
-        self.checkpoint_writer = None
+        self.checkpoint_filename = f"{self.csv_file.split('.')[0]}_data_checkpoint.csv"
+        self.checkpoint_queue = asyncio.Queue()
+        self.writer_task = None
 
     async def __aenter__(self):
         self.client = httpx.AsyncClient()
-        self.checkpoint_filename = f"{self.csv_file.split('.')[0]}_data_checkpoint.csv"
-        checkpoint_exists = os.path.exists(self.checkpoint_filename)
-        self.checkpoint_file = open(self.checkpoint_filename, 'a')
-
-        self.checkpoint_writer = csv.DictWriter(self.checkpoint_file, fieldnames=['name', 'url', 'place_id', 'last_scraped', 'json_data'], extrasaction='ignore')
-        if not checkpoint_exists:
-            self.checkpoint_writer.writeheader()
-        else:
-            self._load_checkpoint()
+        self._load_checkpoint()
+        self.writer_task = asyncio.create_task(self._checkpoint_writer())
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.checkpoint_queue.put(None)
+        if self.writer_task:
+            await self.writer_task
+
         if self.client:
             await self.client.aclose()
-            self.client = None
-        if self.checkpoint_file:
-            self.checkpoint_file.close()
-            self.checkpoint_file = None
-            self.checkpoint_writer = None
 
     async def resolve_place(self, place: CSVPlaceData, force_refresh: bool = False) -> PlaceData:
         if place.url in self.checkpoint and not force_refresh and not self._is_stale(self.checkpoint[place.url]):
@@ -298,7 +295,7 @@ class PlaceResolver:
                 last_scraped=datetime.now().isoformat(),
             )
             self.checkpoint[place.url] = place_data
-            self._save_checkpoint(place_data)
+            await self.checkpoint_queue.put(place_data)
             return place_data
         except Exception as e:
             print(f"Error resolving place {place.name}: {e}")
@@ -320,15 +317,32 @@ class PlaceResolver:
         try:
             df = pd.read_csv(self.checkpoint_filename)
             self.checkpoint = {row['url']: PlaceData(**row) for row in df.to_dict(orient='records')}
-            print(f"Loaded {len(self.checkpoint)} places from checkpoint")
         except Exception as e:
             print(f"Error loading checkpoint: {e}")
 
-    def _save_checkpoint(self, place: PlaceData):
-        try:
-            self.checkpoint_writer.writerow(asdict(place))
-        except Exception as e:
-            print(f"Error saving checkpoint for {place}: {e}")
+    async def _checkpoint_writer(self):
+        """Single writer coroutine - no race conditions"""
+        checkpoint_exists = os.path.exists(self.checkpoint_filename)
+
+        async with aiofiles.open(self.checkpoint_filename, 'a') as f:
+            writer = AsyncDictWriter(f, fieldnames=['name', 'url', 'place_id', 'last_scraped', 'json_data'],
+                                     extrasaction='ignore', quoting=csv.QUOTE_ALL, restval="NULL")
+
+            if not checkpoint_exists:
+                await writer.writeheader()
+
+            while True:
+                place_data = await self.checkpoint_queue.get()
+                if place_data is None:  # Shutdown signal which we add in __aexit__
+                    break
+
+                try:
+                    await writer.writerow(asdict(place_data))
+                    await f.flush()
+                except Exception as e:
+                    print(f"Error saving checkpoint for {place_data.name}: {e}")
+                finally:
+                    self.checkpoint_queue.task_done()
 
 
 class PlaceScraper:
@@ -351,7 +365,7 @@ class ScrapingPipeline:
         await self.process_places(places, csv_file)
 
     async def process_places(self, places: list[CSVPlaceData], csv_file: str):
-        semaphore = asyncio.Semaphore(30)
+        semaphore = asyncio.Semaphore(20)
         async with PlaceResolver(MAPS_API_KEY, csv_file) as resolver:
             async def process_place(place: CSVPlaceData):
                 async with semaphore:
