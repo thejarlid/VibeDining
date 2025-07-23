@@ -1,22 +1,12 @@
 # src/models.py
-from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from dataclasses import dataclass
+from typing import Optional, List
 
 
 @dataclass
 class CSVPlaceData:
     name: str
     url: str
-
-
-@dataclass
-class PlaceData:
-    name: str
-    url: str
-    place_id: str = field(default="")
-    json_data: str = field(default="")
-    last_scraped: Optional[str] = None
 
 
 @dataclass
@@ -43,6 +33,7 @@ class PlaceScrapedData:
 class Place:
     name: str
     place_id: str
+    url: str
     business_status: Optional[str] = None
     formatted_address: Optional[str] = None
     coordinates: Optional[tuple[float, float]] = None
@@ -53,17 +44,19 @@ class Place:
     description: Optional[str] = None
     reviews: Optional[List[str]] = None
     atmosphere: Optional[List[str]] = None
+    last_scraped: Optional[str] = None
 
-    def __init__(self, PlaceBasicData, PlaceScrapedData):
-        self.name = PlaceBasicData.name
-        self.place_id = PlaceBasicData.place_id
-        self.business_status = PlaceBasicData.business_status
-        self.formatted_address = PlaceBasicData.formatted_address
-        self.coordinates = PlaceBasicData.coordinates
-        self.place_types = PlaceBasicData.place_types
-        self.rating = PlaceScrapedData.rating
-        self.price_level = PlaceScrapedData.price_level
-        self.category = PlaceScrapedData.category
-        self.description = PlaceScrapedData.description
-        self.reviews = PlaceScrapedData.reviews
-        self.atmosphere = PlaceScrapedData.atmosphere
+    def __init__(self, csv_data: CSVPlaceData, basic_data: PlaceBasicData, scraped_data: PlaceScrapedData):
+        self.name = csv_data.name
+        self.place_id = basic_data.place_id
+        self.url = csv_data.url
+        self.business_status = basic_data.business_status
+        self.formatted_address = basic_data.formatted_address
+        self.coordinates = basic_data.coordinates
+        self.place_types = basic_data.place_types
+        self.rating = scraped_data.rating
+        self.price_level = scraped_data.price_level
+        self.category = scraped_data.category
+        self.description = scraped_data.description
+        self.reviews = scraped_data.reviews
+        self.atmosphere = scraped_data.atmosphere
