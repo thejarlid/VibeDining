@@ -20,32 +20,50 @@ class PlaceData:
 
 
 @dataclass
-class Review:
-    author_name: str
-    rating: int
-    text: str
+class PlaceBasicData:
+    name: str
+    place_id: str
+    business_status: Optional[str] = None
+    formatted_address: Optional[str] = None
+    coordinates: Optional[tuple[float, float]] = None
+    place_types: Optional[List[str]] = None
+
+
+@dataclass
+class PlaceScrapedData:
+    rating: Optional[float] = None
+    price_level: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    reviews: Optional[List[str]] = None
+    atmosphere: Optional[List[str]] = None
 
 
 @dataclass
 class Place:
-    # REQUIRED fields (always present)
     name: str
     place_id: str
-    last_scraped: datetime
-
-    # CORE fields (usually present, but can be None)
-    address: Optional[str] = None
     business_status: Optional[str] = None
+    formatted_address: Optional[str] = None
     coordinates: Optional[tuple[float, float]] = None
+    place_types: Optional[List[str]] = None
     rating: Optional[float] = None
     price_level: Optional[str] = None
-
-    opening_hours: Optional[List[str]] = None
-
-    has_curbside_pickup: Optional[bool] = None
-    has_delivery: Optional[bool] = None
-    has_dine_in: Optional[bool] = None
-    has_takeout: Optional[bool] = None
-
-    reviews: List[Review] = field(default_factory=list)
+    category: Optional[str] = None
+    description: Optional[str] = None
+    reviews: Optional[List[str]] = None
     atmosphere: Optional[List[str]] = None
+
+    def __init__(self, PlaceBasicData, PlaceScrapedData):
+        self.name = PlaceBasicData.name
+        self.place_id = PlaceBasicData.place_id
+        self.business_status = PlaceBasicData.business_status
+        self.formatted_address = PlaceBasicData.formatted_address
+        self.coordinates = PlaceBasicData.coordinates
+        self.place_types = PlaceBasicData.place_types
+        self.rating = PlaceScrapedData.rating
+        self.price_level = PlaceScrapedData.price_level
+        self.category = PlaceScrapedData.category
+        self.description = PlaceScrapedData.description
+        self.reviews = PlaceScrapedData.reviews
+        self.atmosphere = PlaceScrapedData.atmosphere

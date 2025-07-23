@@ -6,6 +6,7 @@ import argparse
 import csv
 import aiofiles
 import aiocsv
+import re
 import json
 import pandas as pd
 import requests
@@ -15,7 +16,7 @@ from aiocsv import AsyncDictWriter
 from tqdm import tqdm
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
-from model import CSVPlaceData, PlaceData, Place, Review
+from model import CSVPlaceData, PlaceData, Place, PlaceScrapedData, PlaceBasicData
 
 load_dotenv()
 MAPS_API_KEY = os.getenv('MAPS_API_KEY')
@@ -242,10 +243,7 @@ class CSVProcessor:
         places = []
         for _, row in df.iterrows():
             if not pd.isna(row['Title']):
-                places.append(CSVPlaceData(
-                    name=row['Title'],
-                    url=row['URL']
-                ))
+                places.append(CSVPlaceData(row['Title'], row['URL']))
         return places
 
 
@@ -346,6 +344,216 @@ class PlaceResolver:
 
 
 class PlaceScraper:
+    def __init__(self):
+        self.http_client = None
+        self.browser = None
+        self.playwright = None
+
+    # Context manager for resource lifecycle
+    async def __aenter__(self):
+        self.http_client = httpx.AsyncClient()
+        self.playwright = await async_playwright().start()
+        self.browser = await self.playwright.chromium.launch()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.http_client.aclose()
+        await self.playwright.stop()
+        await self.browser.close()
+
+    # Public API
+    async def scrape_place(self, place: CSVPlaceData) -> PlaceData:
+        page = await self.browser.new_page()
+
+        try:
+            # 1. Get place_id from CID through scraping the page
+            place_id = await self._get_place_id(page, place)
+            print(f"place_id: {place_id}")
+
+            # 2. Scrape the detailed data and the api data in parallel
+            api_data = asyncio.create_task(self._get_api_data(place_id))
+            scraped_data = asyncio.create_task(self._scrape_detailed_data(page, place_id))
+            api_data, scraped_data = await asyncio.gather(api_data, scraped_data)
+
+            # 3. Combine the data into a Place object
+            return self._build_place(place, place_id, api_data, scraped_data)
+        except Exception as e:
+            print(f"Error scraping place {place.name}: {e}")
+            return None
+        finally:
+            await page.close()
+
+    # Private methods
+    async def _get_place_id(self, page, place: CSVPlaceData) -> str:
+        url_hex = place.url.split('0x')[-1]
+        cid = int(url_hex, 16)
+        print(f"cid: {cid}")
+        await page.goto(f"https://maps.google.com/?cid={cid}")
+        content = await page.content()
+
+        # Place ID is a 21 character string that starts with ChI
+        place_id_match = re.search(r'ChI[0-9A-Za-z_-]{21,}', content)
+
+        if place_id_match:
+            return place_id_match.group()
+        else:
+            raise ValueError("No place_id found")
+
+    async def _get_api_data(self, place_id: str) -> dict:
+        basic_fields = ["business_status", "formatted_address", "geometry", "name", "place_id", "type"]
+        api_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields={",".join(basic_fields)}&key={MAPS_API_KEY}"
+        response = await self.http_client.get(api_url)
+        try:
+            response.raise_for_status()
+            result = response.json()['result']
+            basic_fields_data = PlaceBasicData(
+                name=result.get('name'),
+                place_id=result.get('place_id'),
+                business_status=result.get('business_status'),
+                formatted_address=result.get('formatted_address'),
+                coordinates=(result.get('geometry', {}).get('location', {}).get('lat'),
+                             result.get('geometry', {}).get('location', {}).get('lng')),
+                place_types=result.get('types')
+            )
+            return basic_fields_data
+        except Exception as e:
+            print(f"Error getting api data for {place_id}: {e}")
+            return None
+
+    async def _scrape_detailed_data(self, page, place_id: str) -> dict:
+
+        # on the overview tab we need to scrape rating, price level, and opening hours
+        # on the reviews tab we should try grab some of the most relevant reviews
+        # on the about page we should grab the restaurant attributes
+
+        scraped_data = PlaceScrapedData()
+        side_panel_div = page.locator('div.w6VYqd')
+
+        # 1. Overview tab
+        top_level_info_div = side_panel_div.locator('div.skqShb')
+
+        # 1.1. Rating
+        rating_div = top_level_info_div.locator('div.F7nice')
+        rating_text = await rating_div.locator('span span').nth(0).inner_text()
+        scraped_data.rating = float(rating_text.strip())
+
+        # 1.2. Price level
+        price_level_div = top_level_info_div.locator('span.mgr77e span').nth(2)
+        price_level_text = await price_level_div.locator('span span').inner_text()
+        scraped_data.price_level = price_level_text.strip()
+
+        # 1.3 Category
+        category_button = top_level_info_div.locator('button[jsaction*="category"]')
+        category_text = await category_button.inner_text()
+        scraped_data.category = category_text.strip()
+
+        # 2. Description
+        description_text_div = side_panel_div.locator('div.PYvSYb')
+        if await description_text_div.count() > 0:
+            description_text = await description_text_div.inner_text()
+            scraped_data.description = description_text.strip()
+
+        # 3. Reviews
+        reviews = await self._extract_reviews(page)
+        scraped_data.reviews = reviews
+
+        # 3. About
+        about_button = side_panel_div.locator('button.hh2c6').filter(has=page.locator('div.Gpq6kf', has_text='About'))
+        if await about_button.count() > 0:
+            await about_button.click()
+            await page.wait_for_selector("li.hpLkke span:nth-of-type(2)", state="visible", timeout=1000)
+            second_spans = page.locator('li.hpLkke span:nth-of-type(2)')
+            if await second_spans.count() > 0:
+                attributes = await second_spans.all_text_contents()
+                scraped_data.atmosphere = attributes
+
+        return scraped_data
+
+    async def _extract_reviews(self, page):
+        """Expand all complex reviews and extract full text + ratings"""
+        try:
+            # First, click all "More" buttons to expand reviews
+            more_buttons = page.locator('button.w8nwRe.kyuRq[aria-label="See more"]')
+            button_count = await more_buttons.count()
+
+            if button_count > 0:
+                print(f"Expanding {button_count} reviews...")
+
+                # Click all "More" buttons
+                for i in range(button_count):
+                    try:
+                        button = more_buttons.nth(i)
+                        # Check if button is visible and clickable
+                        if await button.is_visible():
+                            await button.click()
+                            # Small delay to allow expansion
+                            await page.wait_for_timeout(100)
+                    except Exception as e:
+                        print(f"Failed to expand review {i}: {e}")
+
+                # Wait a bit for all expansions to complete
+                await page.wait_for_timeout(500)
+
+            # Now extract the full review data
+            review_data = await page.evaluate('''
+                () => {
+                    const reviews = [];
+                    const containers = document.querySelectorAll('div.jftiEf.fontBodyMedium');
+                    
+                    containers.forEach(container => {
+                        try {
+                            // Extract full review text (now expanded)
+                            const textElement = container.querySelector('.MyEned');
+                            let text = null;
+                            
+                            if (textElement) {
+                                // Get all text, excluding the "More" button text
+                                const textNodes = [];
+                                const walker = document.createTreeWalker(
+                                    textElement,
+                                    NodeFilter.SHOW_TEXT,
+                                    {
+                                        acceptNode: function(node) {
+                                            // Skip text inside the "More" button
+                                            const parent = node.parentElement;
+                                            if (parent && parent.matches('button.w8nwRe.kyuRq')) {
+                                                return NodeFilter.FILTER_REJECT;
+                                            }
+                                            return NodeFilter.FILTER_ACCEPT;
+                                        }
+                                    }
+                                );
+                                
+                                let node;
+                                while (node = walker.nextNode()) {
+                                    textNodes.push(node.textContent);
+                                }
+                                text = textNodes.join('').trim();
+                            }
+                            if (text && text.length > 0) {
+                                reviews.push(text);
+                            }
+                        } catch (e) {
+                            console.log('Error processing review:', e);
+                        }
+                    });
+                    
+                    return reviews;
+                }
+            ''')
+
+            return review_data if review_data else []
+
+        except Exception as e:
+            print(f"Error extracting expanded reviews: {e}")
+            return []
+
+    def _build_place(self, place: CSVPlaceData, place_id: str,
+                     api_data: dict, scraped_data: dict) -> Place:
+        return Place(api_data, scraped_data)
+
+
+class CheckpointManager:
     pass
 
 
@@ -356,24 +564,43 @@ class PlaceStore:
 class ScrapingPipeline:
     def __init__(self):
         self.csv_processor = CSVProcessor()
-        self.place_resolver = None
-        self.place_scraper = PlaceScraper()
+        # self.place_scraper = PlaceScraper()
+        #   self.checkpoint_manager = CheckpointManager()
         self.place_store = PlaceStore()
 
     async def process_csv_file(self, csv_file: str):
         places = self.csv_processor.parse(csv_file)
-        await self.process_places(places, csv_file)
+        # await self.process_places(places, csv_file)
+        async with PlaceScraper() as place_scraper:
+            result = await place_scraper.scrape_place(places[0])
+            print(result)
 
     async def process_places(self, places: list[CSVPlaceData], csv_file: str):
-        semaphore = asyncio.Semaphore(20)
-        async with PlaceResolver(MAPS_API_KEY, csv_file) as resolver:
-            async def process_place(place: CSVPlaceData):
-                async with semaphore:
-                    place_data = await resolver.resolve_place(place)
-                    pass
+        # self.checkpoint_manager.load_checkpoint(csv_file)
+        semaphore = asyncio.Semaphore(10)
 
-            tasks = [process_place(place) for place in places]
-            await asyncio.gather(*tasks)
+        async with PlaceScraper() as place_scraper:
+            async def process_single_place(place: CSVPlaceData):
+                async with semaphore:
+                    # # Check checkpoint first
+                    # if self.checkpoint_manager.is_processed(place):
+                    #     return self.checkpoint_manager.get_cached(place)
+
+                    # # Scrape new data
+                    # result = await self.place_scraper.scrape_place(place)
+
+                    # # Save checkpoint immediately
+                    # await self.checkpoint_manager.save(result)
+                    # return result
+                    return None
+
+        tasks = [process_single_place(place) for place in places]
+        results = await asyncio.gather(*tasks)
+
+        print(len(results))
+        # Final storage
+        # for result in results:
+        #     await self.place_store.save(result)
 
 
 async def main():
