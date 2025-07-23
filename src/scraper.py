@@ -174,7 +174,6 @@ class PlaceScraper:
             button_count = await more_buttons.count()
 
             if button_count > 0:
-                print(f"Expanding {button_count} reviews...")
 
                 # Click all "More" buttons
                 for i in range(button_count):
@@ -401,7 +400,6 @@ class CheckpointManager:
 
                     await writer.writerow(row_data)
                     await f.flush()
-                    print(f"Saved checkpoint for {place.name}")
 
                 except Exception as e:
                     print(f"Error saving checkpoint for {place.name}: {e}")
@@ -423,7 +421,7 @@ class ScrapingPipeline:
         await self.process_places(places, csv_file)
 
     async def process_places(self, places: list[CSVPlaceData], csv_file: str):
-        semaphore = asyncio.Semaphore(3)
+        semaphore = asyncio.Semaphore(5)
 
         async with PlaceScraper() as place_scraper, CheckpointManager(csv_file=csv_file) as checkpoint_manager:
             async def process_single_place(place: CSVPlaceData):
