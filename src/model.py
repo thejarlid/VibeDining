@@ -1,7 +1,6 @@
 # src/models.py
-from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from dataclasses import dataclass
+from typing import Optional, List
 
 
 @dataclass
@@ -11,41 +10,53 @@ class CSVPlaceData:
 
 
 @dataclass
-class PlaceData:
+class PlaceBasicData:
     name: str
-    url: str
-    place_id: str = field(default="")
-    json_data: str = field(default="")
-    last_scraped: Optional[str] = None
+    place_id: str
+    business_status: Optional[str] = None
+    formatted_address: Optional[str] = None
+    coordinates: Optional[tuple[float, float]] = None
+    place_types: Optional[List[str]] = None
 
 
 @dataclass
-class Review:
-    author_name: str
-    rating: int
-    text: str
+class PlaceScrapedData:
+    rating: Optional[float] = None
+    price_level: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    reviews: Optional[List[str]] = None
+    atmosphere: Optional[List[str]] = None
 
 
 @dataclass
 class Place:
-    # REQUIRED fields (always present)
     name: str
     place_id: str
-    last_scraped: datetime
-
-    # CORE fields (usually present, but can be None)
-    address: Optional[str] = None
+    url: str
     business_status: Optional[str] = None
+    formatted_address: Optional[str] = None
     coordinates: Optional[tuple[float, float]] = None
+    place_types: Optional[List[str]] = None
     rating: Optional[float] = None
     price_level: Optional[str] = None
-
-    opening_hours: Optional[List[str]] = None
-
-    has_curbside_pickup: Optional[bool] = None
-    has_delivery: Optional[bool] = None
-    has_dine_in: Optional[bool] = None
-    has_takeout: Optional[bool] = None
-
-    reviews: List[Review] = field(default_factory=list)
+    category: Optional[str] = None
+    description: Optional[str] = None
+    reviews: Optional[List[str]] = None
     atmosphere: Optional[List[str]] = None
+    last_scraped: Optional[str] = None
+
+    def __init__(self, csv_data: CSVPlaceData, basic_data: PlaceBasicData, scraped_data: PlaceScrapedData):
+        self.name = csv_data.name
+        self.place_id = basic_data.place_id
+        self.url = csv_data.url
+        self.business_status = basic_data.business_status
+        self.formatted_address = basic_data.formatted_address
+        self.coordinates = basic_data.coordinates
+        self.place_types = basic_data.place_types
+        self.rating = scraped_data.rating
+        self.price_level = scraped_data.price_level
+        self.category = scraped_data.category
+        self.description = scraped_data.description
+        self.reviews = scraped_data.reviews
+        self.atmosphere = scraped_data.atmosphere
