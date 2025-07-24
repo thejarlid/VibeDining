@@ -61,8 +61,11 @@ class PlaceScraper:
             scraped_data = asyncio.create_task(self._scrape_detailed_data(page, place.name, place_id))
             api_data, scraped_data = await asyncio.gather(api_data, scraped_data)
 
-            if not api_data or not scraped_data:
-                tqdm.write(f"️{place.name} might be closed or not a restaurant/bar")
+            if not scraped_data:
+                if api_data.business_status != 'OPERATIONAL':
+                    tqdm.write(f"️{place.name} has status {api_data.business_status}")
+                else:
+                    tqdm.write(f"️{place.name} might not be a restaurant/bar")
                 return None
 
             # 3. Combine the data into a Place object
