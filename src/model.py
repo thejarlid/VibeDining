@@ -44,6 +44,7 @@ class Place:
     description: Optional[str] = None
     reviews: Optional[List[str]] = None
     atmosphere: Optional[List[str]] = None
+    geocode_neighbourhoods: Optional[str] = None
     last_scraped: Optional[str] = None
 
     def __init__(self, csv_data: CSVPlaceData, basic_data: PlaceBasicData, scraped_data: PlaceScrapedData):

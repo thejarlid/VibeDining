@@ -61,6 +61,11 @@ class PlaceScraper:
             scraped_data = asyncio.create_task(self._scrape_detailed_data(page, place.name, place_id))
             api_data, scraped_data = await asyncio.gather(api_data, scraped_data)
 
+            if api_data.coordinates:
+                geocode_data = await self._reverse_geocode(api_data.coordinates)
+            else:
+                geocode_data = None
+
             if not scraped_data:
                 if api_data.business_status != 'OPERATIONAL':
                     tqdm.write(f"️{place.name} has status {api_data.business_status}")
@@ -69,7 +74,7 @@ class PlaceScraper:
                 return None
 
             # 3. Combine the data into a Place object
-            return self._build_place(place, api_data, scraped_data)
+            return self._build_place(place, api_data, scraped_data, geocode_data)
         except Exception as e:
             tqdm.write(f"Error scraping {place.name}: {e}")
             return None
@@ -110,6 +115,15 @@ class PlaceScraper:
             return basic_fields_data
         except Exception as e:
             print(f"Error getting api data for {place_id}: {e}")
+            return None
+
+    async def _reverse_geocode(self, coordinates: tuple[float, float]) -> str:
+        r = await self.http_client.get(f"https://maps.googleapis.com/maps/api/geocode/json?latlng={coordinates[0]},{coordinates[1]}&result_type=neighborhood|locality&key={MAPS_API_KEY}")
+        if r.status_code == 200:
+            return json.dumps(r.json()["results"]) if len(r.json()["results"]) > 0 else None
+        else:
+            print(f"Error reverse geocoding {coordinates}: {r.status_code}")
+            print(r.text)
             return None
 
     async def _scrape_detailed_data(self, page, place_name: str, place_id: str) -> dict:
@@ -252,8 +266,9 @@ class PlaceScraper:
             print(f"Error extracting expanded reviews: {e}")
             return []
 
-    def _build_place(self, csv_data: CSVPlaceData, api_data: PlaceBasicData, scraped_data: PlaceScrapedData) -> Place:
+    def _build_place(self, csv_data: CSVPlaceData, api_data: PlaceBasicData, scraped_data: PlaceScrapedData, geocode_data: str) -> Place:
         place = Place(csv_data, api_data, scraped_data)
+        place.geocode_neighbourhoods = geocode_data
         place.last_scraped = datetime.now().isoformat()
         return place
 
@@ -333,8 +348,11 @@ class CheckpointManager:
                     atmosphere=json.loads(row.get('atmosphere', '[]')) if pd.notna(row.get('atmosphere')) else None
                 )
 
+                geocode_neighbourhoods = json.loads(row.get('geocode_neighbourhoods', '[]')) if pd.notna(row.get('geocode_neighbourhoods')) else None
+
                 # Create Place object
                 place = Place(csv_data, basic_data, scraped_data)
+                place.geocode_neighbourhoods = geocode_neighbourhoods
                 place.last_scraped = row.get('last_scraped')
 
                 self.checkpoint[row['source_url']] = place
@@ -363,7 +381,7 @@ class CheckpointManager:
         async with aiofiles.open(self.checkpoint_filename, 'a') as f:
             fieldnames = [
                 'source_url', 'name', 'place_id', 'business_status', 'formatted_address',
-                'lat', 'lng', 'place_types', 'rating', 'price_level', 'category',
+                'lat', 'lng', 'geocode_neighbourhoods', 'place_types', 'rating', 'price_level', 'category',
                 'description', 'reviews', 'atmosphere', 'last_scraped'
             ]
             writer = AsyncDictWriter(f, fieldnames=fieldnames, extrasaction='ignore',
@@ -379,7 +397,6 @@ class CheckpointManager:
                     break
 
                 place, source_url = item
-
                 try:
                     # Flatten Place object for CSV
                     row_data = {
@@ -391,6 +408,7 @@ class CheckpointManager:
                         'formatted_address': place.formatted_address,
                         'lat': place.coordinates[0] if place.coordinates else None,
                         'lng': place.coordinates[1] if place.coordinates else None,
+                        'geocode_neighbourhoods': json.dumps(place.geocode_neighbourhoods) if place.geocode_neighbourhoods else None,
                         'place_types': json.dumps(place.place_types) if place.place_types else None,
                         'rating': place.rating,
                         'price_level': place.price_level,
@@ -410,14 +428,9 @@ class CheckpointManager:
                     self.checkpoint_queue.task_done()
 
 
-class PlaceStore:
-    pass
-
-
 class ScrapingPipeline:
     def __init__(self):
         self.csv_processor = CSVProcessor()
-        self.place_store = PlaceStore()
 
     async def process_csv_file(self, csv_file: str):
         places = self.csv_processor.parse(csv_file)
@@ -446,9 +459,6 @@ class ScrapingPipeline:
             results = await atqdm.gather(*tasks, desc="Processing places")
 
             print(f"Successfully processed {len([r for r in results if r is not None])} places")
-            # Final storage
-            # for result in results:
-            #     await self.place_store.save(result)
 
 
 async def main():
