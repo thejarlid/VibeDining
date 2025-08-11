@@ -136,8 +136,8 @@ class SQLiteStore:
 class ChromaStore:
 
     def __init__(self, chroma_path: str):
-        self.client = chromadb.Client()
-        self.collection = self.client.create_collection(
+        self.chroma_client = chromadb.PersistentClient(path=chroma_path)
+        self.collection = self.chroma_client.get_or_create_collection(
             name="places",
             embedding_function=embedding_functions.OpenAIEmbeddingFunction(
                 api_key=OPENAI_API_KEY,
@@ -249,8 +249,6 @@ class Indexer:
         for i, row in df.iterrows():
             place = self._create_place_from_csv_row(row)
             self.index(place)
-            if i == 5:
-                break
 
     def _create_place_from_csv_row(self, row: dict) -> Place:
         """Create a Place object from CSV row with proper type conversion"""
@@ -308,7 +306,7 @@ class Indexer:
         return place
 
 
-indexer = Indexer(db_path='places.db', chroma_path='chroma.db')
+indexer = Indexer(db_path='places.db', chroma_path='places_vector_db')
 indexer.index_csv('/Users/dilraj/Downloads/Takeout-2/Saved/NY food and drinks_place_checkpoint.csv')
 # indexer.index_csv('/Users/dilraj/Downloads/Takeout-2/Saved/San Francisco_place_checkpoint.csv')
 
