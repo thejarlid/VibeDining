@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import os
 from pprint import pprint
 from openai import OpenAI
+from sentence_transformers import CrossEncoder
 
 Locality = namedtuple('Locality', ['id', 'name', 'full_name', 'latitude', 'longitude', 'type'])
 load_dotenv()
@@ -144,6 +145,7 @@ class ChromaStore:
                 model_name="text-embedding-3-small"
             ))
         self.openai_client = OpenAI()
+        self.reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
     def save(self, place: Place):
         docs_dict = self.__create_documents_from_place(place)
@@ -219,17 +221,32 @@ Return the JSON object only, no other text.
             'special_features': summarrized_data['special_features']
         }
 
-    def search(self, query: str, n_results: int = 20):
+    def search(self, query: str, n_results: int = 20, rerank: bool = True):
         """Search for places"""
         results = self.collection.query(
             query_texts=[query],
             n_results=n_results
         )
-
+        docs = results['documents'][0]
+        metadatas = results['metadatas'][0]
         res = []
-        for metadatas, documents in zip(results['metadatas'], results['documents']):
-            for metadata, document in zip(metadatas, documents):
-                res.append((metadata['name'], metadata['type'], metadata['id'], document))
+        if rerank:
+            pairs = [(query, doc) for doc in docs]
+            scores = self.reranker.predict(pairs)
+            scored_results = [
+                {
+                    "score": score,
+                    "document": doc,
+                    "metadata": meta
+                }
+                for doc, meta, score in zip(docs, metadatas, scores)
+            ]
+            reranked = sorted(scored_results, key=lambda x: x["score"], reverse=True)
+            for r in reranked[:7]:
+                res.append((r['score'], r['metadata']['name'], r['metadata']['type'], r['metadata']['id'], r['document']))
+        else:
+            for metadata, doc in zip(metadatas, docs):
+                res.append((0, metadata['name'], metadata['type'], metadata['id'], doc))
 
         return res
 
@@ -321,6 +338,6 @@ for query in queries:
     results = indexer.chroma_store.search(query)
 
     # Display results
-    for result in results:
-        print(result[0], result[1], result[2], result[3])
+    # for result in results:
+    #     print(result[0], result[1], result[2], result[3])
     print("\n\n==============================================\n\n")
