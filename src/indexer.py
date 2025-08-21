@@ -326,18 +326,3 @@ class Indexer:
 indexer = Indexer(db_path='places.db', chroma_path='places_vector_db')
 # indexer.index_csv('/Users/dilraj/Downloads/Takeout-2/Saved/NY food and drinks_place_checkpoint.csv')
 # indexer.index_csv('/Users/dilraj/Downloads/Takeout-2/Saved/San Francisco_place_checkpoint.csv')
-
-queries = ["Casual Korean restaurant that serve great cocktails and isn't too expensive",
-           "cheap burger spots",
-           "A sexy bar that's great for a first date in williamsburg",
-           "I'm looking for a place to eat with friends that won't have a long wait and has a garden or patio to sit in",
-           "Somewhere I can go to eat alone, that's got a good vibe and not too expensive.",
-           "A japanese restaurant in east village"]
-
-for query in queries:
-    results = indexer.chroma_store.search(query)
-
-    # Display results
-    # for result in results:
-    #     print(result[0], result[1], result[2], result[3])
-    print("\n\n==============================================\n\n")
