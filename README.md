@@ -1,11 +1,63 @@
-# VibeDining - Google Maps Data Scraper
+# VibeDining - Intelligent Restaurant Recommendation System
 
-## Scraper Architecture
+## Overview
 
-### Overview
-The VibeDining scraper is designed as a cost-optimized, async-first pipeline that extracts place data from Google Takeout CSV files. The architecture prioritizes web scraping over expensive API calls, using Google Maps API only for basic fields that are difficult to scrape reliably.
+VibeDining is a comprehensive restaurant recommendation system that combines data scraping, intelligent indexing, and agentic search to provide personalized dining recommendations. The system processes user-saved restaurant lists and uses multi-modal search techniques to understand both explicit constraints and qualitative preferences.
 
-### High-Level Architecture
+## 🏗️ System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           VibeDining System                              │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                 │
+│  │   SCRAPING  │───▶│   INDEXING  │───▶│ AGENTIC AI  │                 │
+│  │   PIPELINE  │    │   SYSTEM    │    │ RECOMMENDER │                 │
+│  └─────────────┘    └─────────────┘    └─────────────┘                 │
+│                                                                         │
+│  • Google Takeout    • SQLite +       • LangGraph Agent               │
+│  • Web Scraping      Vector Store     • Multi-tool Search             │
+│  • Place Data        • Neighborhoods  • Quality Validation            │
+│  • API Integration   • Semantic Index • Natural Language             │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+## 📊 Data Flow
+
+```mermaid
+graph TD
+    A[Google Takeout CSV] --> B[Scraping Pipeline]
+    B --> C[Place Data Extraction]
+    C --> D[Dual Storage System]
+    
+    D --> E[SQLite Database]
+    D --> F[Vector Store]
+    
+    E --> G[Structured Queries]
+    F --> H[Semantic Search]
+    
+    G --> I[Agentic Recommender]
+    H --> I
+    
+    I --> J[Quality Validation]
+    J --> K[Personalized Recommendations]
+    
+    style A fill:#e1f5fe
+    style D fill:#f3e5f5
+    style I fill:#e8f5e8
+    style K fill:#fff3e0
+```
+
+---
+
+## 🕷️ Scraping Pipeline
+
+### Purpose
+Extract comprehensive restaurant data from Google Takeout saved lists using cost-optimized web scraping combined with minimal API calls.
+
+### Architecture
 
 ```
                     ┌─────────────────────────────────────────┐
@@ -31,93 +83,40 @@ The VibeDining scraper is designed as a cost-optimized, async-first pipeline tha
                    └─────────────┘                               
 ```
 
-### Component Responsibilities
+### Key Components
 
-#### 1. ScrapingPipeline (Orchestrator)
-**Purpose**: Central coordinator that manages the entire scraping process
+#### 1. **ScrapingPipeline** (Orchestrator)
+- **Purpose**: Central coordinator managing the entire scraping process
+- **Responsibilities**:
+  - Load CSV files and coordinate processing
+  - Control concurrency with semaphore limits
+  - Handle checkpointing strategy
+  - Error handling and retry logic
+  - Final data persistence
 
-**Responsibilities**:
-- Load CSV files and coordinate processing
-- Control concurrency with semaphore limits
-- Handle checkpointing strategy
-- Error handling and retry logic
-- Final data persistence
+#### 2. **PlaceScraper** (Core Engine)
+- **Purpose**: Extract place data using web scraping + minimal API calls
+- **Process**:
+  ```python
+  async def scrape_place(self, place: CSVPlaceData) -> Place:
+      # 1. Get place_id from CID (web scraping)
+      place_id = await self._get_place_id(page, place)
+      
+      # 2. Run in parallel:
+      api_task = asyncio.create_task(self._get_api_data(place_id))
+      scraping_task = asyncio.create_task(self._scrape_detailed_data(page, place_id))
+      
+      # 3. Combine results
+      api_data, scraped_data = await asyncio.gather(api_task, scraping_task)
+      return self._build_place(place, place_id, api_data, scraped_data)
+  ```
 
-**Key Methods**:
-- `process_csv_file(csv_file: str)` - Main entry point
-- `process_places(places: List[CSVPlaceData])` - Async place processing
-
-#### 2. CSVProcessor (Input Handler)
-**Purpose**: Parse Google Takeout CSV exports
-
-**Responsibilities**:
-- Read and validate CSV files
-- Extract place names and URLs
-- Convert to internal data structures
-
-**Key Methods**:
-- `parse(csv_file: str) -> List[CSVPlaceData]`
-
-#### 3. PlaceScraper (Core Scraper)
-**Purpose**: Extract place data using web scraping + minimal API calls
-
-**Responsibilities**:
-- Manage browser lifecycle (Playwright)  
-- Navigate to Google Maps pages using CID
-- Extract place_id from page content
-- Scrape atmospheric attributes and place details
-- Make minimal API calls for basic fields only
-- Run scraping and API calls concurrently
-- Handle API configuration and error handling
-
-**Key Methods**:
-- `scrape_place(place: CSVPlaceData) -> Place` - Main scraping workflow
-- `_get_place_id(page, place) -> str` - Extract place_id from maps page
-- `_scrape_detailed_data(page, place_id) -> dict` - Scrape DOM data
-- `_get_api_data(place_id) -> dict` - Make basic API call
-- `_build_place(place, place_id, api_data, scraped_data) -> Place` - Combine data
-- Context manager methods for browser lifecycle
-
-**Internal Async Flow**:
-```python
-async def scrape_place(self, place: CSVPlaceData) -> Place:
-    # 1. Get place_id from CID (web scraping)
-    place_id = await self._get_place_id(page, place)
-    
-    # 2. Run in parallel:
-    api_task = asyncio.create_task(self._get_api_data(place_id))        # API call
-    scraping_task = asyncio.create_task(self._scrape_detailed_data(page, place_id))  # DOM scraping
-    
-    # 3. Combine results
-    api_data, scraped_data = await asyncio.gather(api_task, scraping_task)
-    return self._build_place(place, place_id, api_data, scraped_data)
-```
-
-#### 4. CheckpointManager (Persistence Layer)
-**Purpose**: Handle incremental processing and crash recovery
-
-**Responsibilities**:
-- Load existing checkpoint data on startup
-- Save processed places immediately to CSV
-- Check if places are already processed
-- Handle staleness detection
-
-**Key Methods**:
-- `load_checkpoint(csv_file: str)` - Load existing progress
-- `save(place: Place)` - Save checkpoint entry
-- `is_processed(place: CSVPlaceData) -> bool` - Check if cached
-- `get_cached(place: CSVPlaceData) -> Place` - Retrieve cached data
-
-#### 5. PlaceStore (Output Handler)
-**Purpose**: Final data persistence
-
-**Responsibilities**:
-- Save enriched place data to JSON files
-- Future: Integration with vector databases
-- Handle output formatting and serialization
-
-**Key Methods**:
-- `save(place: Place)` - Persist final place data
+#### 3. **CheckpointManager** (Persistence)
+- **Purpose**: Handle incremental processing and crash recovery
+- **Features**:
+  - Load existing checkpoint data on startup
+  - Save processed places immediately to CSV
+  - Staleness detection and re-processing
 
 ### Data Models
 
@@ -129,113 +128,380 @@ class CSVPlaceData:
 
 @dataclass
 class Place:
-    # Core fields
+    # Core identifiers
     name: str
     place_id: str
     url: str
     
-    # API fields (basic/free only)
-    address: Optional[str]
+    # API fields (minimal/free)
+    formatted_address: Optional[str]
     coordinates: Optional[tuple[float, float]]
     
-    # Scraped fields
+    # Scraped rich data
     attributes: List[str]  # Atmospheric attributes
-    opening_hours: Optional[List[str]]
+    reviews: List[dict]    # Customer reviews
     rating: Optional[float]
+    price_level: Optional[str]
+    category: Optional[str]
     
     # Metadata
     last_scraped: str
 ```
 
-### Processing Flow
+---
 
-1. **CSV Loading**: Parse Google Takeout CSV files
-2. **Checkpoint Check**: Skip already processed places
-3. **Concurrent Scraping**: Process multiple places simultaneously
-   - Navigate to Google Maps via CID
-   - Extract place_id from page content
-   - Fork into parallel operations:
-     - Scrape detailed data from DOM
-     - Make minimal API call for basic fields
-   - Combine results into Place object
-4. **Immediate Checkpointing**: Save progress after each place
-5. **Final Storage**: Persist all data to JSON
+## 🗄️ Indexing System
 
-### Key Design Principles
+### Purpose
+Create a dual-storage system optimized for both structured queries and semantic search.
 
-#### Cost Optimization
-- **Scraping First**: Extract maximum data from free web scraping
-- **Minimal API Usage**: Only request basic fields that are hard to scrape
-- **No Expensive CID Calls**: Avoid costly place details API endpoints
+### Database Schema
 
-#### Async Efficiency
-- **Concurrent Processing**: Multiple places processed simultaneously
-- **Internal Parallelization**: API calls don't block DOM scraping
-- **Resource Sharing**: Single browser instance with multiple pages
+```sql
+-- Core restaurant data
+CREATE TABLE Places (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    rating REAL,
+    price_level TEXT,
+    category TEXT,
+    formatted_address TEXT,
+    description TEXT,
+    business_status TEXT,
+    -- ... other fields
+);
 
-#### Reliability
-- **Immediate Checkpointing**: Progress saved after each successful scrape
-- **Graceful Error Handling**: Individual place failures don't crash pipeline
-- **Resume Capability**: Restart from last checkpoint on crashes
+-- Neighborhood/location data
+CREATE TABLE Localities (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    full_name TEXT,
+    latitude REAL,
+    longitude REAL,
+    type TEXT CHECK(type IN ('neighborhood', 'city'))
+);
 
-#### Extensibility
-- **Modular Components**: Easy to swap implementations
-- **Clean Interfaces**: Components communicate through well-defined APIs
-- **Future-Ready**: Architecture supports database integration
+-- Many-to-many relationship
+CREATE TABLE PlaceLocalities (
+    place_id TEXT REFERENCES Places(id),
+    locality_id TEXT REFERENCES Localities(id),
+    PRIMARY KEY(place_id, locality_id)
+);
+```
+
+### Vector Store Structure
+
+**ChromaDB Collections:**
+- **Document Types**: `description`, `atmosphere`, `food_drink`, `special_features`
+- **Embeddings**: OpenAI `text-embedding-3-small`
+- **Reranking**: Cross-encoder model for relevance refinement
+- **Metadata**: Place ID, name, document type for cross-referencing
+
+### LLM-Enhanced Data Processing
+
+```python
+def _summarize_place_with_llm(self, place: Place):
+    # Convert raw scraped data into semantic documents
+    response = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{
+            "role": "user", 
+            "content": f"Summarize venue atmosphere and features for: {place.data}"
+        }]
+    )
+    return {
+        'atmosphere': "Cozy, intimate setting perfect for dates...",
+        'food_drink': "Specializes in craft cocktails and small plates...", 
+        'special_features': "Live jazz music on weekends, outdoor seating..."
+    }
+```
+
+---
+
+## 🤖 Agentic Recommender
+
+### Architecture Overview
+
+The agentic system uses **LangGraph** to create an intelligent recommendation agent that can dynamically choose and combine multiple search strategies.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                 AgenticRecommender                       │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐ │
+│  │ GUARDRAIL   │───▶│ MULTI-TOOL  │───▶│  RESPONSE   │ │
+│  │ VALIDATION  │    │   AGENT     │    │ GENERATION  │ │
+│  └─────────────┘    └─────────────┘    └─────────────┘ │
+│                                                         │
+│  • Query Intent     • Vector Search    • Quality Check │
+│  • Topic Relevance  • SQL Filtering    • Data Limits  │
+│  • Safety Check     • Location Valid   • Honest Reply │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Core Components
+
+#### 1. **Guardrail System**
+```python
+class GuardrailResult(BaseModel):
+    allowed: bool = Field(description="Whether query is restaurant-related")
+    reason: str = Field(description="Reasoning for decision")
+
+def _guardrail(self, state: State):
+    # LLM-based intent classification
+    result = self._guardrail_llm.invoke([
+        SystemMessage(content="Classify if query is restaurant-related..."),
+        HumanMessage(content=state["input"])
+    ])
+    return {"guardrail_result": result}
+```
+
+#### 2. **Multi-Tool Agent**
+The agent has access to multiple specialized tools:
+
+```python
+class RestaurantSearchTools:
+    def vector_search(self, query: str, n_results: int = 20):
+        """Semantic similarity search for qualitative features"""
+        
+    def sql_search(self, constraints: str):
+        """SQL queries for specific constraints (location, price, rating)"""
+        
+    def validate_location_match(self, place_id: str, target_location: str):
+        """Verify if results actually match location constraints"""
+        
+    def get_restaurant_details(self, place_id: str):
+        """Get comprehensive details for specific restaurants"""
+```
+
+#### 3. **Tool Usage Strategy**
+
+**Vector Search**: Used for qualitative queries
+- "cozy atmosphere", "romantic dinner", "good for work"
+- Semantic understanding of vibe and ambiance
+- Reviews and description analysis
+
+**SQL Search**: Used for specific constraints  
+- Neighborhoods: "in East Village", "Williamsburg area"
+- Price ranges: "cheap", "$$ level", "under $20"
+- Ratings: "highly rated", "4+ stars"
+- Cuisine: "Italian", "sushi", "coffee shops"
+
+**Location Validation**: Quality control
+- Cross-reference vector results with location constraints
+- Filter out results that don't match specified neighborhoods
+- Use join table to verify place-locality relationships
+
+### Intelligence & Quality Control
+
+#### Smart Query Processing
+```python
+# Example system prompt excerpt:
+"""
+TOOL USAGE STRATEGY:
+1. **vector_search**: Use for qualitative queries (atmosphere, vibe)
+2. **sql_search**: Use for specific constraints (location, price, cuisine)
+3. **validate_location_match**: Verify results match location requirements
+4. **get_restaurant_details**: Get full info for promising results
+
+RECOMMENDED APPROACH:
+- For queries with LOCATION + VIBE: Use BOTH vector_search AND sql_search
+- For queries with specific constraints: Start with sql_search
+- ALWAYS cross-reference when location is mentioned
+- VALIDATE each result against user constraints
+"""
+```
+
+#### Quality Validation
+```python
+# Built-in quality control:
+QUALITY_CONTROL = {
+    "location_mismatch": "EXCLUDE if doesn't match neighborhood",
+    "category_mismatch": "EXCLUDE if wrong type (restaurant vs coffee shop)",
+    "insufficient_data": "BE HONEST about limited saved lists",
+    "accuracy_over_quantity": "Better to admit data gaps than give bad results"
+}
+```
+
+#### Honest Data Limitation Handling
+```python
+# When data is limited:
+response_format = """
+I found {X} places in your saved lists that match your criteria, but the selection is limited. 
+
+Here's what I found:
+[list the few good matches]
+
+Your saved lists don't seem to have many {coffee shops/restaurants} in {location}. 
+In the future, I could search the web to find additional options that match your preferences.
+"""
+```
+
+### State Management
+
+**LangGraph State Extension:**
+```python
+class State(AgentState):  # Extends LangGraph's AgentState
+    # Additional fields for our use case
+    input: str
+    output: Optional[str] 
+    guardrail_result: Optional[GuardrailResult]
+    # Inherits: messages (for ReAct agent compatibility)
+```
+
+---
+
+## 🔄 Complete System Flow
+
+### 1. **Data Ingestion** (Scraping Pipeline)
+```
+Google Takeout CSV → Parse Places → Concurrent Scraping → Rich Place Data
+```
+
+### 2. **Data Processing** (Indexing System)  
+```
+Place Data → LLM Summarization → Dual Storage (SQL + Vector) → Searchable Index
+```
+
+### 3. **User Query** (Agentic Recommender)
+```
+User Input → Guardrail → Multi-Tool Search → Quality Validation → Response
+```
+
+### Example Query Flow
+
+**User**: *"Find me a cozy coffee shop in Williamsburg where I can work"*
+
+1. **Guardrail**: ✅ Restaurant-related query approved
+2. **Agent Analysis**: Location (Williamsburg) + Vibe (cozy, work-friendly) + Category (coffee shop)
+3. **Tool Execution**:
+   - `sql_search("coffee shops in Williamsburg")` → Find Williamsburg coffee shops
+   - `vector_search("cozy coffee shop good for work")` → Find work-friendly atmospheres
+   - `validate_location_match(place_ids, "Williamsburg")` → Verify locations
+4. **Quality Control**: Filter results that don't match constraints
+5. **Response**: Provide 2-3 validated recommendations or honest "limited data" response
+
+---
+
+## 🚀 Key Benefits
+
+### **Cost Optimization**
+- Scraping-first approach minimizes API costs
+- LLM processing creates rich semantic data from free scraped content
+- Efficient vector storage with smart document chunking
+
+### **Intelligent Search**
+- Multi-modal approach: structured + semantic + validation
+- Agent decides optimal tool combination per query
+- Quality-first results with honest limitation acknowledgment
+
+### **Scalable Architecture**
+- Modular design allows independent component scaling
+- Async processing for high throughput
+- Clean separation between scraping, indexing, and recommendation
+
+### **User Experience**
+- Natural language queries ("cozy", "romantic", "good for work")
+- Location-aware recommendations
+- Transparent about data limitations
+- Future-ready for web search enrichment
+
+---
+
+## 🛠️ Setup & Usage
+
+### Dependencies
+```bash
+pip install -r requirements.txt
+```
 
 ### Configuration
-
-#### Concurrency Control
 ```python
-semaphore = asyncio.Semaphore(10)  # Max concurrent scrapers
+# Required environment variables
+OPENAI_API_KEY=your_openai_key
+GOOGLE_MAPS_API_KEY=your_google_maps_key  # For basic fields only
 ```
 
-#### API Field Selection
+### Usage Examples
+
+#### Scraping
 ```python
-fields = "place_id,name,formatted_address,geometry"  # Free fields only
+from src.scraping_pipeline import ScrapingPipeline
+
+pipeline = ScrapingPipeline()
+await pipeline.process_csv_file("my_saved_places.csv")
 ```
 
-#### Staleness Detection
+#### Indexing  
 ```python
-stale_days = 30  # Re-scrape places older than 30 days
+from src.indexer import Indexer
+
+indexer = Indexer(db_path='places.db', chroma_path='places_vector_db')
+indexer.index_csv('scraped_places.csv')
 ```
 
-## Architecture Summary
+#### Recommendations
+```python
+from src.simple_agent import AgenticRecommender
 
-### Simplified 4-Component Design
-
-The VibeDining scraper uses a streamlined architecture with **4 core components**:
-
-1. **CSVProcessor** - Parses Google Takeout CSV files
-2. **PlaceScraper** - Handles all data extraction (scraping + API calls)  
-3. **CheckpointManager** - Manages incremental processing and crash recovery
-4. **PlaceStore** - Persists final enriched data
-
-### How It Works
-
-**Sequential Flow:**
-```
-CSV File → Parse Places → Process Concurrently → Checkpoint → Final Storage
+agent = AgenticRecommender(debug=True)
+response = agent.query("Find me a romantic Italian restaurant in East Village")
+print(response)
 ```
 
-**Per-Place Processing (Concurrent):**
+---
+
+## 🔮 Future Enhancements
+
+### **Web Search Integration**
+- Automatic web search when saved lists have insufficient data
+- Real-time hours, menu updates, recent reviews
+- Dynamic data enrichment
+
+### **Advanced Personalization**
+- User preference learning
+- Historical recommendation feedback
+- Collaborative filtering with other users
+
+### **Enhanced Data Sources**
+- Multiple platform integration (Yelp, OpenTable, etc.)
+- Social media sentiment analysis
+- Real-time event and crowd data
+
+---
+
+## 📁 Project Structure
+
 ```
-1. Navigate to Google Maps via CID
-2. Extract place_id from page content  
-3. PARALLEL: Scrape DOM data + Make API call
-4. Combine results into Place object
-5. Save checkpoint immediately
+vibedining/
+├── src/
+│   ├── scraping_pipeline.py     # Data extraction pipeline
+│   ├── indexer.py              # Dual storage system
+│   ├── simple_agent.py         # Agentic recommender
+│   ├── query.py               # Alternative graph-based agent
+│   └── model.py               # Data models
+├── places.db                  # SQLite database
+├── places_vector_db/          # ChromaDB vector store
+├── requirements.txt           # Dependencies
+└── README.md                 # This file
 ```
 
-**Key Benefits:**
-- **Cost Optimized** - Minimal API usage, scraping-first approach
-- **Concurrent Processing** - Multiple places + parallel scraping/API per place
-- **Crash Resilient** - Immediate checkpointing with resume capability
-- **Simple Architecture** - Only 4 components, clear responsibilities
+---
 
-**Concurrency Model:**
-- **Pipeline Level** - N places processed simultaneously (semaphore controlled)
-- **Place Level** - Each place runs DOM scraping + API call in parallel
-- **Resource Efficient** - Single browser with multiple pages, shared HTTP client
+## 🎯 Design Philosophy
 
-This architecture balances cost efficiency, performance, and reliability while maintaining clean separation of concerns across all components.
+**Data-Driven Intelligence**: Leverage user's actual saved places rather than generic recommendations
+
+**Quality Over Quantity**: Better to provide fewer accurate results than many irrelevant ones
+
+**Transparency**: Be honest about data limitations and system capabilities
+
+**Cost Efficiency**: Maximize value from free/low-cost data sources before expensive API calls
+
+**User Intent Understanding**: Go beyond keyword matching to understand qualitative preferences
+
+**Modular Architecture**: Each component can be improved or replaced independently
+
+This architecture creates a foundation for highly personalized, intelligent restaurant recommendations that understand both explicit constraints and subtle preferences while maintaining cost efficiency and result quality.
