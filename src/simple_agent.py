@@ -81,65 +81,6 @@ class RestaurantSearchTools:
         except Exception as e:
             return [{"error": f"Vector search failed: {str(e)}"}]
 
-    def sql_search(self, constraints: str) -> List[Dict]:
-        """Search for restaurants using SQL database with specific filters. 
-
-        Use this tool when you need to:
-        - Filter by SPECIFIC NEIGHBORHOODS (e.g., "East Village", "Williamsburg", "Tribeca")
-        - Filter by PRICE RANGE (e.g., "$", "$$", "$$$", "$1-10", "$20-30")
-        - Filter by RATING thresholds (e.g., "rating > 4.0")
-        - Filter by CUISINE/CATEGORY (e.g., "Italian restaurant", "Coffee shop")
-        - Get restaurants meeting MULTIPLE specific criteria
-
-        Examples of good constraints:
-        - "restaurants in East Village"
-        - "Italian restaurants with rating > 4.0"
-        - "coffee shops in Williamsburg under $20"
-        - "sushi restaurants with price level $$$ or higher"
-
-        The constraints parameter should describe what you're looking for in natural language."""
-        try:
-            schema_context = """
-Database Schema:
-- Places: id, name, rating, price_level, category, formatted_address, description, business_status, latitude, longitude
-- Localities: id, name, full_name, type ('neighborhood' or 'city'), latitude, longitude  
-- PlaceLocalities: place_id, locality_id (join table connecting places to their neighborhoods/cities)
-
-Sample Data:
-- Categories: 'Italian restaurant', 'Coffee shop', 'Bar', 'Japanese restaurant', 'French restaurant'
-- Price levels: '$', '$$', '$$$', '$1-10', '$10-20', '$20-30', '$30-50', '$50-100', '$100+'
-- Localities: 'East Village' (neighborhood), 'Williamsburg' (neighborhood), 'Tribeca' (neighborhood), 'New York' (city)
-
-Use JOINs to find places in specific neighborhoods or cities. Make sure to check against the localities name and full name.
-Example JOIN query:
-SELECT p.name, p.rating, p.price_level, p.category, p.formatted_address FROM Places p 
-JOIN PlaceLocalities pl ON p.id = pl.place_id 
-JOIN Localities l ON pl.locality_id = l.id 
-WHERE LOWER(l.name) LIKE LOWER('%East Village%') OR LOWER(l.full_name) LIKE LOWER('%East Village%')
-"""
-
-            sql_prompt = f"""
-{schema_context}
-
-Find restaurants that match these constraints: {constraints}
-
-Write and EXECUTE a proper SQL query using the 3-table schema. Use JOINs when location/neighborhood is specified.
-
-Key requirements:
-- Use CASE-INSENSITIVE matching for location names (LOWER() function)
-- For price filters, map natural language to actual price_level values
-- Return actual restaurant data: names, ratings, categories, addresses, price levels
-
-EXECUTE the query and return the actual results, not just the SQL code.
-"""
-
-            result = self.sql_agent.invoke({"input": sql_prompt})
-
-            return [{"sql_result": result.get("output", "No results")}]
-
-        except Exception as e:
-            return [{"error": f"SQL search failed: {str(e)}"}]
-
     def web_search(self, search_query: str, restaurant_name: str = None) -> List[Dict]:
         """Search for current restaurant information online"""
         pass
