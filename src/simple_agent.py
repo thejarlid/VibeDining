@@ -1,20 +1,17 @@
-import asyncio
 import json
 import numpy as np
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Optional
 from IPython.display import Image, display
 import sqlite3
 
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, START, END
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
 from langchain_community.agent_toolkits.sql.base import create_sql_agent
 from langgraph.prebuilt import create_react_agent
-from langgraph.graph.message import add_messages
 from langgraph.prebuilt.chat_agent_executor import AgentState
-from typing_extensions import TypedDict, Annotated
 
 from pydantic import BaseModel, Field
 
@@ -51,7 +48,7 @@ class RestaurantSearchTools:
 
         # SQL agent for complex queries
         self.db = SQLDatabase.from_uri(f"sqlite:///{db_path}")
-        self.llm_mini = ChatOpenAI(model="gpt-4o-mini", temperature=0.3, api_key=OPENAI_API_KEY)
+        self.llm_mini = ChatOpenAI(model="gpt-5-mini", temperature=0.3, api_key=OPENAI_API_KEY)
         self.sql_toolkit = SQLDatabaseToolkit(db=self.db, llm=self.llm_mini)
         self.sql_agent = create_sql_agent(
             llm=self.llm_mini,
@@ -195,12 +192,12 @@ class AgenticRecommender:
         self.debug = debug
 
         self.llm = ChatOpenAI(
-            model="gpt-4o",
+            model="gpt-5",
             temperature=0.7,
             api_key=OPENAI_API_KEY
         )
         self.llm_mini = ChatOpenAI(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             temperature=0.3,
             api_key=OPENAI_API_KEY
         )

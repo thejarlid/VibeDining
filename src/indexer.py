@@ -189,7 +189,7 @@ Return the JSON object only, no other text.
 """
 
         response = self.openai_client.chat.completions.create(
-            model="gpt-4o-mini",  # cheaper/faster for batch processing
+            model="gpt-5-mini",  # cheaper/faster for batch processing
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": "You are a helpful assistant for summarizing venue details."},
