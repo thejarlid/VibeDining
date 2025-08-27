@@ -27,11 +27,9 @@ export default function ChatInterface() {
 
     // Start transition animation if this is the first message
     if (messages.length === 0) {
-      console.log('Starting transition animation');
       setIsTransitioning(true);
       // Add the message after a short delay to allow animation to start
       setTimeout(() => {
-        console.log('Adding message after delay');
         setMessages([newMessage]);
         setIsLoading(true);
       }, 100);
@@ -73,19 +71,19 @@ export default function ChatInterface() {
   }, [isTransitioning]);
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-[#0f0f0f] transition-colors">
+    <div className="chat-container">
       <Header onNewChat={handleNewChat} />
       
-      <div className="flex-1 flex flex-col relative overflow-hidden">
+      <div className="chat-content">
         {/* Welcome Screen */}
         {!hasMessages && !isTransitioning && (
-          <div className="flex-1 flex items-center justify-center px-4">
-            <div className="w-full max-w-4xl mx-auto">
-              <div className="text-center mb-16">
-                <h1 className="text-4xl font-normal text-gray-900 dark:text-white mb-4">
+          <div className="welcome-screen">
+            <div className="welcome-content">
+              <div className="welcome-text">
+                <h1 className="welcome-title">
                   VibeDining
                 </h1>
-                <p className="text-gray-500 dark:text-gray-300 text-lg">
+                <p className="welcome-subtitle">
                   How can I help you discover amazing restaurants today?
                 </p>
               </div>
@@ -102,8 +100,8 @@ export default function ChatInterface() {
 
         {/* Transition Animation - Pill sliding down */}
         {isTransitioning && (
-          <div className="flex-1 flex flex-col justify-end animate-[slideToBottom_0.6s_ease-out_forwards]">
-            <div className="p-4">
+          <div className="transition-container">
+            <div className="transition-input-wrapper">
               <ChatInput 
                 onSendMessage={() => {}} // Disabled during transition
                 disabled={true}
@@ -115,7 +113,7 @@ export default function ChatInterface() {
 
         {/* Chat Interface - appears instantly after animation */}
         {hasMessages && !isTransitioning && (
-          <div className="flex flex-col h-full">
+          <div className="chat-interface">
             <MessageList messages={messages} isLoading={isLoading} />
             <ChatInput 
               onSendMessage={handleSendMessage} 

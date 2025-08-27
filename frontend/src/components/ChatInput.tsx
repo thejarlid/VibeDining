@@ -57,10 +57,21 @@ export default function ChatInput({ onSendMessage, disabled, isInitial = false }
     ? 'right-2 top-1/2 -translate-y-1/2' 
     : 'right-2 bottom-2';
 
+  // Get CSS classes based on state
+  const containerClass = isInitial ? 'input-container-initial' : 'input-container';
+  const textareaClass = `input-textarea ${isInitial ? 'input-textarea-initial' : 'input-textarea-chat'}`;
+  
+  let buttonClass = 'input-send-btn';
+  if (isInitial) {
+    buttonClass += isExpanded ? ' input-send-btn-bottom' : ' input-send-btn-initial-centered';
+  } else {
+    buttonClass += ' input-send-btn-chat';
+  }
+
   return (
-    <div className={`${isInitial ? 'p-0' : 'p-4 bg-white dark:bg-[#0f0f0f] border-t border-gray-200/60 dark:border-gray-800/60'}`}>
-      <form onSubmit={handleSubmit} className={`${isInitial ? 'max-w-3xl' : 'max-w-3xl'} mx-auto`}>
-        <div className="relative">
+    <div className={containerClass}>
+      <form onSubmit={handleSubmit} className="input-form">
+        <div className="input-wrapper">
           <textarea
             ref={textareaRef}
             value={message}
@@ -68,9 +79,7 @@ export default function ChatInput({ onSendMessage, disabled, isInitial = false }
             onKeyDown={handleKeyDown}
             placeholder={isInitial ? "Ask anything" : "Message VibeDining"}
             disabled={disabled}
-            className={`w-full ${isInitial ? 'pl-4 pr-12 py-3' : 'p-4 pr-12'} border border-gray-300/60 dark:border-gray-700/60 bg-white dark:bg-[#1f1f1f] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-transparent disabled:opacity-50 transition-all duration-200 shadow-lg ${
-              isInitial ? 'text-base' : 'text-base'
-            } overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent`}
+            className={textareaClass}
             rows={1}
             style={{ 
               minHeight: isInitial ? '48px' : '52px', 
@@ -81,9 +90,7 @@ export default function ChatInput({ onSendMessage, disabled, isInitial = false }
           <button
             type="submit"
             disabled={!message.trim() || disabled}
-            className={`absolute ${isInitial ? buttonPosition : 'right-3 bottom-3'} p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:hover:text-gray-300 dark:disabled:hover:text-gray-600 transition-all duration-200 ${
-              isInitial ? 'rounded-full hover:bg-gray-100 dark:hover:bg-gray-800' : ''
-            }`}
+            className={buttonClass}
           >
             <svg
               width="18"
