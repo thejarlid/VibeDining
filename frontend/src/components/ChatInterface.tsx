@@ -38,9 +38,8 @@ export default function ChatInterface() {
       setIsLoading(true);
     }
 
-    // TODO(human): Add your restaurant agent API call here
-    // This should call your backend API to get the restaurant recommendations
-    // Replace this with actual API integration
+    // TODO: Add restaurant agent API call here
+    // This should call the backend API to get the restaurant recommendations
     setTimeout(() => {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -73,7 +72,7 @@ export default function ChatInterface() {
   return (
     <div className="chat-container">
       <Header onNewChat={handleNewChat} />
-      
+
       <div className="chat-content">
         {/* Welcome Screen */}
         {!hasMessages && !isTransitioning && (
@@ -88,8 +87,8 @@ export default function ChatInterface() {
                 </p>
               </div>
               <div>
-                <ChatInput 
-                  onSendMessage={handleSendMessage} 
+                <ChatInput
+                  onSendMessage={handleSendMessage}
                   disabled={isLoading}
                   isInitial={true}
                 />
@@ -102,8 +101,8 @@ export default function ChatInterface() {
         {isTransitioning && (
           <div className="transition-container">
             <div className="transition-input-wrapper">
-              <ChatInput 
-                onSendMessage={() => {}} // Disabled during transition
+              <ChatInput
+                onSendMessage={() => { }} // Disabled during transition
                 disabled={true}
                 isInitial={true}
               />
@@ -115,8 +114,8 @@ export default function ChatInterface() {
         {hasMessages && !isTransitioning && (
           <div className="chat-interface">
             <MessageList messages={messages} isLoading={isLoading} />
-            <ChatInput 
-              onSendMessage={handleSendMessage} 
+            <ChatInput
+              onSendMessage={handleSendMessage}
               disabled={isLoading}
               isInitial={true}
             />
