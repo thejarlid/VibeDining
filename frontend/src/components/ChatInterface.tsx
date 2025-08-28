@@ -4,56 +4,27 @@ import { useState, useEffect } from 'react';
 import Header from './Header';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
-
-interface Message {
-  id: string;
-  content: string;
-  sender: 'user' | 'assistant';
-  timestamp: Date;
-}
+import { useChat } from '../hooks/useChat';
 
 export default function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const { messages, isLoading, error, sendChatMessage, clearMessages } = useChat();
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleSendMessage = async (content: string) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      content,
-      sender: 'user',
-      timestamp: new Date(),
-    };
-
-    // Start transition animation if this is the first message
+    // Start transition animation of the pill box down if this is the first message
     if (messages.length === 0) {
       setIsTransitioning(true);
       // Add the message after a short delay to allow animation to start
       setTimeout(() => {
-        setMessages([newMessage]);
-        setIsLoading(true);
+        sendChatMessage(content);
       }, 100);
     } else {
-      setMessages(prev => [...prev, newMessage]);
-      setIsLoading(true);
+      sendChatMessage(content);
     }
-
-    // TODO: Add restaurant agent API call here
-    // This should call the backend API to get the restaurant recommendations
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `I'd be happy to help you find great restaurants! Based on your request "${content}", here are some recommendations...`,
-        sender: 'assistant',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, assistantMessage]);
-      setIsLoading(false);
-    }, 1000);
   };
 
   const handleNewChat = () => {
-    setMessages([]);
+    clearMessages();
     setIsTransitioning(false);
   };
 
@@ -64,7 +35,7 @@ export default function ChatInterface() {
     if (isTransitioning) {
       const timer = setTimeout(() => {
         setIsTransitioning(false);
-      }, 600); // Match animation duration (reduced from 800ms to 600ms)
+      }, 600); // Match animation duration 
       return () => clearTimeout(timer);
     }
   }, [isTransitioning]);
@@ -119,6 +90,13 @@ export default function ChatInterface() {
               disabled={isLoading}
               isInitial={true}
             />
+          </div>
+        )}
+
+        {/* Error Display */}
+        {error && (
+          <div className="error-message">
+            Error: {error}
           </div>
         )}
       </div>
