@@ -60,21 +60,3 @@ export async function POST(request: NextRequest) {
         );
     }
 }
-
-// Optional: Add a health check endpoint
-export async function GET() {
-    try {
-        const railwayUrl = process.env.RAILWAY_API_URL || 'http://localhost:8000';
-        const response = await fetch(`${railwayUrl}/health`, {
-            method: 'GET',
-        });
-
-        if (response.ok) {
-            return NextResponse.json({ status: 'healthy' });
-        } else {
-            return NextResponse.json({ status: 'unhealthy' }, { status: 503 });
-        }
-    } catch (error) {
-        return NextResponse.json({ status: 'unhealthy' }, { status: 503 });
-    }
-} 
