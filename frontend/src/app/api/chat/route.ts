@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
                 // 'Authorization': `Bearer ${process.env.RAILWAY_API_KEY}`,
             },
             body: JSON.stringify({
-                content: body.content,
+                query: body.content,
                 // Add any other fields your backend expects
             }),
         });
@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
             console.error('Railway backend error:', response.status, errorText);
 
             return NextResponse.json(
-                { error: 'Backend service unavailable' },
-                { status: 503 }
+                { error: `Backend error: ${response.status} - ${errorText}` },
+                { status: response.status }
             );
         }
 
