@@ -1,0 +1,269 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideToBottom {
+  from {
+    transform: translateY(-60vh);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Message Styling */
+.message-container {
+  @apply mb-6;
+}
+
+.user-message {
+  @apply flex justify-end;
+}
+
+.user-bubble {
+  @apply max-w-[80%] bg-gray-100 dark:bg-[#2f2f2f] rounded-2xl rounded-br-md px-5 py-3 text-gray-900 dark:text-white;
+}
+
+.user-text {
+  @apply whitespace-pre-wrap leading-relaxed text-sm;
+}
+
+.assistant-message {
+  @apply w-full max-w-none leading-relaxed text-gray-900 dark:text-white;
+}
+
+/* Markdown Component Styles */
+.md-heading-1 {
+  @apply text-2xl font-semibold mb-4 mt-6 text-gray-900 dark:text-white;
+}
+
+.md-heading-2 {
+  @apply text-xl font-semibold mb-3 mt-5 text-gray-900 dark:text-white;
+}
+
+.md-heading-3 {
+  @apply text-lg font-semibold mb-2 mt-4 text-gray-900 dark:text-white;
+}
+
+.md-paragraph {
+  @apply mb-4 text-gray-900 dark:text-white leading-relaxed;
+}
+
+.md-list-unordered {
+  @apply mb-4 ml-6 list-disc text-gray-900 dark:text-white;
+}
+
+.md-list-ordered {
+  @apply mb-4 ml-6 list-decimal text-gray-900 dark:text-white;
+}
+
+.md-list-item {
+  @apply mb-1 text-gray-900 dark:text-white;
+}
+
+.md-strong {
+  @apply font-semibold text-gray-900 dark:text-white;
+}
+
+.md-code-inline {
+  @apply bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm font-mono text-gray-900 dark:text-gray-100;
+}
+
+.md-code-block {
+  @apply bg-gray-100 dark:bg-gray-800 p-4 rounded-lg mb-4 overflow-x-auto text-sm font-mono text-gray-900 dark:text-gray-100;
+}
+
+/* Loading Indicator */
+.loading-container {
+  @apply mb-6;
+}
+
+.loading-content {
+  @apply w-full;
+}
+
+.loading-indicator {
+  @apply flex items-center gap-2 text-gray-500 dark:text-gray-400;
+}
+
+.loading-dots {
+  @apply flex space-x-1;
+}
+
+.loading-dot {
+  @apply w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce;
+}
+
+.loading-text {
+  @apply text-sm;
+}
+
+/* Header Component */
+.header-container {
+  @apply flex items-center justify-between px-4 py-3 border-b border-gray-200/60 dark:border-gray-800/60 bg-white/80 dark:bg-[#0f0f0f]/80 backdrop-blur-sm;
+}
+
+.header-logo {
+  @apply flex items-center;
+}
+
+.header-title {
+  @apply text-lg font-medium text-gray-900 dark:text-gray-100;
+}
+
+.header-new-chat-btn {
+  @apply flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1f1f1f] rounded-lg transition-colors border border-gray-200 dark:border-gray-800;
+}
+
+/* Chat Interface */
+.chat-container {
+  @apply flex flex-col h-screen bg-white dark:bg-[#0f0f0f] transition-colors;
+}
+
+.chat-content {
+  @apply flex-1 flex flex-col relative overflow-hidden;
+}
+
+.welcome-screen {
+  @apply flex-1 flex items-center justify-center px-4;
+}
+
+.welcome-content {
+  @apply w-full max-w-4xl mx-auto;
+}
+
+.welcome-text {
+  @apply text-center mb-16;
+}
+
+.welcome-title {
+  @apply text-4xl font-normal text-gray-900 dark:text-white mb-4;
+}
+
+.welcome-subtitle {
+  @apply text-gray-500 dark:text-gray-300 text-lg;
+}
+
+.transition-container {
+  @apply flex-1 flex flex-col justify-end animate-[slideToBottom_0.6s_ease-out_forwards];
+}
+
+.transition-input-wrapper {
+  @apply p-4;
+}
+
+.chat-interface {
+  @apply flex flex-col h-full;
+}
+
+/* Chat Input Component */
+.input-container {
+  @apply p-4 bg-white dark:bg-[#0f0f0f] border-t border-gray-200/60 dark:border-gray-800/60;
+}
+
+.input-container-initial {
+  @apply p-0;
+}
+
+.input-form {
+  @apply max-w-4xl mx-auto;
+}
+
+.input-wrapper {
+  @apply relative;
+}
+
+.input-textarea {
+  @apply w-full border border-gray-300/60 dark:border-gray-700/60 bg-white dark:bg-[#1f1f1f] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-transparent disabled:opacity-50 transition-all duration-200 shadow-lg overflow-y-auto;
+}
+
+.input-textarea-initial {
+  @apply pl-4 pr-12 py-3 rounded-full text-base;
+}
+
+.input-textarea-chat {
+  @apply p-4 pr-12 rounded-2xl text-base;
+}
+
+.input-send-btn {
+  @apply absolute p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:hover:text-gray-300 dark:disabled:hover:text-gray-600 transition-all duration-200;
+}
+
+.input-send-btn-initial-centered {
+  @apply right-2 top-1/2 -translate-y-1/2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800;
+}
+
+.input-send-btn-bottom {
+  @apply right-2 bottom-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800;
+}
+
+.input-send-btn-chat {
+  @apply right-3 bottom-3;
+}
