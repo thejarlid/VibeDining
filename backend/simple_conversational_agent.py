@@ -37,7 +37,7 @@ def safe_json_serialize(obj):
 class RestaurantSearchTools:
     """Enhanced search tools for conversational restaurant recommendations"""
 
-    def __init__(self, db_path: str = '../places.db', chroma_path: str = '../places_vector_db'):
+    def __init__(self, db_path: str = 'places.db', chroma_path: str = 'places_vector_db'):
         self.sqlite_store = SQLiteStore(db_path)
         self.chroma_store = ChromaStore(chroma_path)
 
@@ -50,7 +50,7 @@ class RestaurantSearchTools:
             toolkit=self.sql_toolkit,
             agent_type="openai-tools"
         )
-        self.db_conn = sqlite3.connect('../places.db')
+        self.db_conn = sqlite3.connect('places.db')
 
     def vector_search(self, query: str, n_results: int = 20) -> List[Dict]:
         """Search for restaurants using semantic similarity. Best for atmosphere, vibe, and qualitative features."""
@@ -259,13 +259,14 @@ TOOL USAGE STRATEGY:
 4. **get_restaurant_details**: Use to get full info about specific places from other searches
 
 RECOMMENDED APPROACH:
-1. Perform both sql_search and vector_search to get comprehensive results
-2. VALIDATE each result against user constraints:
+1. Perform intent analysis to determine if the user is asking for a restaurant, bar, coffee shop, etc. If the request is not related to the conversation or to the purpose of your usage then respond with a message that you are not able to help with that.
+2. Perform both sql_search and vector_search to get comprehensive results
+3. VALIDATE each result against user constraints:
     - Location: Does the address/neighborhood actually match what they asked for?
     - Category: Is it actually the type of place they want (coffee shop, restaurant, etc.)?
     - Other criteria: Price, rating, etc.
-3. FILTER OUT results that don't meet the constraints
-4. If few/no quality results remain, BE HONEST about data limitations
+4. FILTER OUT results that don't meet the constraints
+5. If few/no quality results remain, BE HONEST about data limitations
 
 QUALITY CONTROL:
 - If a result doesn't match the location constraint, EXCLUDE it

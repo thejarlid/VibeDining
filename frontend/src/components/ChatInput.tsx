@@ -23,6 +23,13 @@ export default function ChatInput({ onSendMessage, disabled, isInitial = false }
     adjustTextareaHeight();
   }, [message]);
 
+  // Auto-focus the textarea when component mounts or when not disabled
+  useEffect(() => {
+    if (!disabled && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [disabled]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || disabled) return;
@@ -30,9 +37,12 @@ export default function ChatInput({ onSendMessage, disabled, isInitial = false }
     onSendMessage(message.trim());
     setMessage('');
     
-    // Reset height after sending
+    // Reset height after sending and refocus
     setTimeout(() => {
       adjustTextareaHeight();
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
     }, 0);
   };
 

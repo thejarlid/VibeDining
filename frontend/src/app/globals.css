@@ -225,11 +225,11 @@ body {
 
 /* Chat Input Component */
 .input-container {
-  @apply p-4 bg-white dark:bg-[#0f0f0f] border-t border-gray-200/60 dark:border-gray-800/60;
+  @apply p-4 pb-8 bg-white dark:bg-[#0f0f0f] border-t border-gray-200/60 dark:border-gray-800/60;
 }
 
 .input-container-initial {
-  @apply p-0;
+  @apply p-0 mb-8;
 }
 
 .input-form {

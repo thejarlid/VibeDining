@@ -37,7 +37,7 @@ def safe_json_serialize(obj):
 class RestaurantSearchTools:
     """Enhanced search tools for conversational restaurant recommendations"""
 
-    def __init__(self, db_path: str = 'places.db', chroma_path: str = 'places_vector_db'):
+    def __init__(self, db_path: str = '../places.db', chroma_path: str = '../places_vector_db'):
         self.sqlite_store = SQLiteStore(db_path)
         self.chroma_store = ChromaStore(chroma_path)
 
@@ -50,7 +50,7 @@ class RestaurantSearchTools:
             toolkit=self.sql_toolkit,
             agent_type="openai-tools"
         )
-        self.db_conn = sqlite3.connect('places.db')
+        self.db_conn = sqlite3.connect('../places.db')
 
     def vector_search(self, query: str, n_results: int = 20) -> List[Dict]:
         """Search for restaurants using semantic similarity. Best for atmosphere, vibe, and qualitative features."""
