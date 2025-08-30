@@ -14,12 +14,21 @@ export async function POST(request: NextRequest) {
 
         // Call your Railway backend
         const railwayUrl = process.env.RAILWAY_API_URL || 'http://localhost:8000';
+        const railwayApiKey = process.env.RAILWAY_API_KEY;
+
+        if (!railwayApiKey) {
+            console.error('RAILWAY_API_KEY environment variable is not set');
+            return NextResponse.json(
+                { error: 'Server configuration error' },
+                { status: 500 }
+            );
+        }
+
         const response = await fetch(`${railwayUrl}/chat`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // Add any authentication headers your backend needs
-                // 'Authorization': `Bearer ${process.env.RAILWAY_API_KEY}`,
+                'X-API-Key': railwayApiKey,
             },
             body: JSON.stringify({
                 query: body.content,
