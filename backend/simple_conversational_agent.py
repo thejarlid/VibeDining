@@ -50,7 +50,7 @@ class RestaurantSearchTools:
             toolkit=self.sql_toolkit,
             agent_type="openai-tools"
         )
-        self.db_conn = sqlite3.connect('places.db')
+        self.db_conn = sqlite3.connect(db_path)
 
     def vector_search(self, query: str, n_results: int = 20) -> List[Dict]:
         """Search for restaurants using semantic similarity. Best for atmosphere, vibe, and qualitative features."""
@@ -195,7 +195,7 @@ EXECUTE the query and return the actual results, not just the SQL code.
 class SimpleConversationalRestaurantAgent:
     """Simple conversational restaurant agent using LangGraph's built-in memory"""
 
-    def __init__(self, debug: bool = False):
+    def __init__(self, db_path: str = 'places.db', chroma_path: str = 'places_vector_db', debug: bool = False):
         self.debug = debug
 
         # Use LangGraph's built-in memory for conversation persistence
@@ -206,7 +206,7 @@ class SimpleConversationalRestaurantAgent:
             temperature=0.7,
             api_key=OPENAI_API_KEY
         )
-        self.tools = RestaurantSearchTools()
+        self.tools = RestaurantSearchTools(db_path=db_path, chroma_path=chroma_path)
         self.agent = self._build_agent()
 
     def _build_agent(self):
