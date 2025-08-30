@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Call your Railway backend
-        const railwayUrl = process.env.RAILWAY_API_URL || 'http://localhost:8000';
+        const baseUrl = process.env.RAILWAY_API_URL || 'http://localhost:8000';
         const railwayApiKey = process.env.RAILWAY_API_KEY;
 
         if (!railwayApiKey) {
@@ -23,6 +23,9 @@ export async function POST(request: NextRequest) {
                 { status: 500 }
             );
         }
+
+        // Ensure URL has protocol
+        const railwayUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
         const response = await fetch(`${railwayUrl}/chat`, {
             method: 'POST',
