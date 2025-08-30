@@ -25,6 +25,10 @@ RUN pip install --upgrade pip && \
 # Copy application code
 COPY . .
 
+# DEBUG: List files to see what got copied
+RUN ls -la
+RUN find . -name "*.db" -o -name "*chroma*" | head -20
+
 # Expose port (Railway will override with $PORT)
 EXPOSE 8000
 
