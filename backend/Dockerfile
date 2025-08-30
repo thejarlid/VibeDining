@@ -25,9 +25,13 @@ RUN pip install --upgrade pip && \
 # Copy application code
 COPY . .
 
-# DEBUG: List files to see what got copied
-RUN ls -la
-RUN find . -name "*.db" -o -name "*chroma*" | head -20
+# Copy databases to a temporary location (volume will be mounted at runtime)
+RUN mkdir -p /app/db_seed
+RUN cp places.db /app/db_seed/places.db
+RUN cp -r places_vector_db /app/db_seed/places_vector_db
+
+# Verify seed databases exist
+RUN ls -la /app/db_seed/
 
 # Expose port (Railway will override with $PORT)
 EXPOSE 8000

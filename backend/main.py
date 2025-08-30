@@ -2,13 +2,35 @@ from simple_conversational_agent import SimpleConversationalRestaurantAgent
 from fastapi import FastAPI, Request, HTTPException, Depends, Header
 from pydantic import BaseModel
 import os
+import shutil
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
-agent = SimpleConversationalRestaurantAgent()
+# Get database paths from environment variables
+DB_PATH = os.getenv("DB_PATH", "places.db")  # fallback for local development
+CHROMA_PATH = os.getenv("CHROMA_PATH", "places_vector_db")  # fallback for local development
+
+# Copy seed databases to volume if they don't exist (Railway setup)
+
+
+def setup_persistent_databases():
+    if DB_PATH.startswith('/data/') and not os.path.exists(DB_PATH):
+        if os.path.exists('/app/db_seed/places.db'):
+            os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+            shutil.copy2('/app/db_seed/places.db', DB_PATH)
+
+    if CHROMA_PATH.startswith('/data/') and not os.path.exists(CHROMA_PATH):
+        if os.path.exists('/app/db_seed/places_vector_db'):
+            shutil.copytree('/app/db_seed/places_vector_db', CHROMA_PATH)
+
+
+# Setup databases for Railway
+setup_persistent_databases()
+
+agent = SimpleConversationalRestaurantAgent(db_path=DB_PATH, chroma_path=CHROMA_PATH)
 
 # Get API key from environment variable
 API_KEY = os.getenv("API_KEY")
