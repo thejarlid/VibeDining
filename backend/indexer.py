@@ -144,7 +144,7 @@ class ChromaStore:
                 api_key=OPENAI_API_KEY,
                 model_name="text-embedding-3-small"
             ))
-        self.openai_client = OpenAI()
+        self.openai_client = OpenAI(api_key=OPENAI_API_KEY)
         self.reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
     def save(self, place: Place):
