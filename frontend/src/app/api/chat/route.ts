@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
         // Ensure URL has protocol
         const railwayUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 150000); // 2.5 minutes
+
         const response = await fetch(`${railwayUrl}/chat`, {
             method: 'POST',
             headers: {
@@ -35,9 +38,11 @@ export async function POST(request: NextRequest) {
             },
             body: JSON.stringify({
                 query: body.content,
-                // Add any other fields your backend expects
             }),
+            signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             const errorText = await response.text();
