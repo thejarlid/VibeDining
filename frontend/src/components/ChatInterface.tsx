@@ -51,7 +51,7 @@ export default function ChatInterface() {
             <div className="welcome-content">
               <div className="welcome-text">
                 <h1 className="welcome-title">
-                  VibeDining
+                  VibeDine
                 </h1>
                 <p className="welcome-subtitle">
                   How can I help you discover amazing restaurants today?

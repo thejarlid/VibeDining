@@ -7,7 +7,7 @@ export default function Header({ onNewChat }: HeaderProps) {
     <header className="header-container">
       <div className="header-logo">
         <h1 className="header-title">
-          VibeDining
+          VibeDine
         </h1>
       </div>
 
