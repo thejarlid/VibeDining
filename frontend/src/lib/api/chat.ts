@@ -15,6 +15,13 @@ export interface SendMessageResponse {
     // Add any other response fields from your backend
 }
 
+export interface ApiChatMessage {
+    id?: string;
+    content: string;
+    sender: 'user' | 'assistant';
+    timestamp?: string | number;
+}
+
 export class ChatAPIError extends Error {
     constructor(message: string, public status?: number) {
         super(message);
@@ -51,11 +58,11 @@ export const sendMessage = async (request: SendMessageRequest): Promise<SendMess
 };
 
 // Utility function to format API response
-export const formatChatMessage = (apiResponse: any): ChatMessage => {
+export const formatChatMessage = (apiResponse: ApiChatMessage): ChatMessage => {
     return {
         id: apiResponse.id || Date.now().toString(),
         content: apiResponse.content,
         sender: apiResponse.sender,
         timestamp: new Date(apiResponse.timestamp || Date.now()),
     };
-}; 
+};

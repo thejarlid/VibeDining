@@ -52,10 +52,6 @@ export default function ChatInput({ onSendMessage, disabled, isInitial = false }
   const isExpanded = currentHeight > 60;
   const borderRadius = isExpanded ? '20px' : '24px';
   
-  // Position button differently for single line vs expanded
-  const buttonPosition = isInitial && !isExpanded 
-    ? 'right-2 top-1/2 -translate-y-1/2' 
-    : 'right-2 bottom-2';
 
   // Get CSS classes based on state
   const containerClass = isInitial ? 'input-container-initial' : 'input-container';

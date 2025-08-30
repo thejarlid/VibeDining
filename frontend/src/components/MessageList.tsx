@@ -25,7 +25,7 @@ export default function MessageList({ messages, isLoading }: MessageListProps) {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-6 py-6">
-        {messages.map((message, index) => (
+        {messages.map((message) => (
           <div key={message.id} className={`message-container ${message.sender === 'user' ? 'user-message' : ''}`}>
             {message.sender === 'user' ? (
               <div className="user-bubble">
