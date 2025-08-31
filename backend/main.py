@@ -41,10 +41,16 @@ def setup_persistent_databases():
     if DB_PATH.startswith('/data/'):
         if os.path.exists('/app/db_seed/places.db'):
             os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+            # Use os.remove() for single files like the SQLite database
+            if os.path.exists(DB_PATH):
+                os.remove(DB_PATH)
             shutil.copy2('/app/db_seed/places.db', DB_PATH)
 
     if CHROMA_PATH.startswith('/data/'):
         if os.path.exists('/app/db_seed/places_vector_db'):
+            # Use shutil.rmtree() for directories since Chroma creates a folder structure
+            if os.path.exists(CHROMA_PATH):
+                shutil.rmtree(CHROMA_PATH)
             shutil.copytree('/app/db_seed/places_vector_db', CHROMA_PATH)
 
 
