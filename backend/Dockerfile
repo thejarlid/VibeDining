@@ -30,9 +30,6 @@ RUN mkdir -p /app/db_seed
 RUN cp places.db /app/db_seed/places.db
 RUN cp -r places_vector_db /app/db_seed/places_vector_db
 
-# Verify seed databases exist
-RUN ls -la /app/db_seed/
-
 # Expose port (Railway will override with $PORT)
 EXPOSE 8000
 

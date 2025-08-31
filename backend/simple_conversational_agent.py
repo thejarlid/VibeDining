@@ -268,6 +268,8 @@ RECOMMENDED APPROACH:
 4. FILTER OUT results that don't meet the constraints
 5. If few/no quality results remain, BE HONEST about data limitations
 
+Try to respond to the user's query fast and don't dwell too much on going back and forth. Iterative approaches over multiple messages is better.
+
 QUALITY CONTROL:
 - If a result doesn't match the location constraint, EXCLUDE it
 - If you have < 3 good matches, acknowledge limited data in your saved lists
