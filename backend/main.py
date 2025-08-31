@@ -38,12 +38,12 @@ except Exception as e:
 
 
 def setup_persistent_databases():
-    if DB_PATH.startswith('/data/') and not os.path.exists(DB_PATH):
+    if DB_PATH.startswith('/data/'):
         if os.path.exists('/app/db_seed/places.db'):
             os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
             shutil.copy2('/app/db_seed/places.db', DB_PATH)
 
-    if CHROMA_PATH.startswith('/data/') and not os.path.exists(CHROMA_PATH):
+    if CHROMA_PATH.startswith('/data/'):
         if os.path.exists('/app/db_seed/places_vector_db'):
             shutil.copytree('/app/db_seed/places_vector_db', CHROMA_PATH)
 
