@@ -68,7 +68,7 @@ async def chat(request: ChatRequest, api_key: str = Depends(verify_api_key)):
         # Print contents of current directory
         current_dir = os.listdir()
         print("Current directory contents:", current_dir)
-        response = ""  # await agent.chat(request.query, session_id="default")
+        response = await agent.chat(request.query, session_id="default")
         return {"response": response}
     except Exception as e:
         print(f"Error in chat endpoint: {e}")
