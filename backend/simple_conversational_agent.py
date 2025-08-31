@@ -268,7 +268,7 @@ RECOMMENDED APPROACH:
 4. FILTER OUT results that don't meet the constraints
 5. If few/no quality results remain, BE HONEST about data limitations
 
-Try to respond to the user's query fast and don't dwell too much on going back and forth. Iterative approaches over multiple messages is better.
+Try to respond to the user's query as fast as possible so produce the fastest and and most relevant tool plan rather than going back and forth on tool usage.
 
 QUALITY CONTROL:
 - If a result doesn't match the location constraint, EXCLUDE it
