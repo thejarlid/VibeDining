@@ -14,6 +14,15 @@ DB_PATH = os.getenv("DB_PATH", "places.db")  # fallback for local development
 CHROMA_PATH = os.getenv("CHROMA_PATH", "places_vector_db")  # fallback for local development
 root = os.getenv("RAILWAY_VOLUME_MOUNT_PATH", "/")
 
+print(f"DB_PATH: {DB_PATH}")
+print(f"CHROMA_PATH: {CHROMA_PATH}")
+print(f"root: {root}")
+
+print(f"os.getcwd(): {os.getcwd()}")
+print(f"os.listdir(): {os.listdir()}")
+print(f"os.listdir(root): {os.listdir(root)}")
+
+
 # Copy seed databases to volume if they don't exist (Railway setup)
 
 
