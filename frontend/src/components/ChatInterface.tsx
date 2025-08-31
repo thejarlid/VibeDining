@@ -23,8 +23,8 @@ export default function ChatInterface() {
     }
   };
 
-  const handleNewChat = () => {
-    clearMessages();
+  const handleNewChat = async () => {
+    await clearMessages();
     setIsTransitioning(false);
   };
 

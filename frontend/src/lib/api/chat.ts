@@ -8,11 +8,12 @@ export interface ChatMessage {
 
 export interface SendMessageRequest {
     content: string;
+    session_id?: string;
 }
 
 export interface SendMessageResponse {
-    message: ChatMessage;
-    // Add any other response fields from your backend
+    response: string;
+    session_id: string;
 }
 
 export interface ApiChatMessage {
@@ -29,6 +30,20 @@ export class ChatAPIError extends Error {
     }
 }
 
+export const endSession = async (sessionId: string): Promise<void> => {
+    try {
+        await fetch('/api/session', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ session_id: sessionId }),
+        });
+    } catch (error) {
+        console.warn('Failed to end session:', error);
+    }
+};
+
 export const sendMessage = async (request: SendMessageRequest): Promise<SendMessageResponse> => {
     try {
         const response = await fetch('/api/chat', {
@@ -36,7 +51,10 @@ export const sendMessage = async (request: SendMessageRequest): Promise<SendMess
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(request),
+            body: JSON.stringify({
+                content: request.content,
+                session_id: request.session_id
+            }),
         });
 
         if (!response.ok) {
@@ -48,7 +66,11 @@ export const sendMessage = async (request: SendMessageRequest): Promise<SendMess
         }
 
         const data = await response.json();
-        return data;
+        console.log('data', data); // TODO: remove this
+        return {
+            response: data.response,
+            session_id: data.session_id
+        };
     } catch (error) {
         if (error instanceof ChatAPIError) {
             throw error;

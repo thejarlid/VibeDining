@@ -1,8 +1,12 @@
+from datetime import datetime, timedelta
 from simple_conversational_agent import SimpleConversationalRestaurantAgent
 from fastapi import FastAPI, Request, HTTPException, Depends, Header
 from pydantic import BaseModel
 import os
 import shutil
+import uuid
+import asyncio
+from typing import Optional
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -56,23 +60,73 @@ async def verify_api_key(x_api_key: str = Header(None)):
 
 class ChatRequest(BaseModel):
     query: str
+    session_id: Optional[str] = None
+
+
+class SessionResponse(BaseModel):
+    session_id: str
+
+
+# Track active sessions with timestamps for cleanup
+active_sessions = {}  # {session_id: last_activity_time}
+
+
+def cleanup_old_sessions():
+    """Clean up sessions older than 30 minutes"""
+    cutoff_time = datetime.now() - timedelta(minutes=30)
+    expired_sessions = [
+        session_id for session_id, last_activity in active_sessions.items()
+        if last_activity < cutoff_time
+    ]
+
+    for session_id in expired_sessions:
+        try:
+            # Clean up the agent's conversation memory
+            asyncio.create_task(agent.reset_conversation(session_id))
+            del active_sessions[session_id]
+            print(f"Cleaned up expired session: {session_id}")
+        except Exception as e:
+            print(f"Error cleaning up session {session_id}: {e}")
 
 
 @app.post("/chat")
 async def chat(request: ChatRequest, api_key: str = Depends(verify_api_key)):
-    print("Received request:", request)
-    print("Content:", request.query)
+    # Auto-create session if not provided
+    if not request.session_id or request.session_id not in active_sessions:
+        session_id = str(uuid.uuid4())
+    else:
+        session_id = request.session_id
+
+    # Update session activity timestamp
+    active_sessions[session_id] = datetime.now()
+
+    # Periodically clean up old sessions (every 50th request to avoid overhead)
+    if len(active_sessions) % 50 == 0:
+        cleanup_old_sessions()
 
     try:
-        # Use the async conversational agent
-        # Print contents of current directory
-        current_dir = os.listdir()
-        print("Current directory contents:", current_dir)
-        response = await agent.chat(request.query, session_id="default")
-        return {"response": response}
+        response = await agent.chat(request.query, session_id=session_id)
+        return {
+            "response": response,
+            "session_id": session_id
+        }
     except Exception as e:
         print(f"Error in chat endpoint: {e}")
         return {"error": f"Failed to process request: {str(e)}"}
+
+
+@app.delete("/session/{session_id}")
+async def end_session(session_id: str, api_key: str = Depends(verify_api_key)):
+    """Manually end a specific session (optional - for when user explicitly leaves)"""
+    try:
+        if session_id in active_sessions:
+            await agent.reset_conversation(session_id)
+            del active_sessions[session_id]
+            return {"status": "ended", "session_id": session_id}
+        else:
+            return {"status": "not_found", "session_id": session_id}
+    except Exception as e:
+        return {"error": f"Failed to end session: {str(e)}"}
 
 
 @app.get("/health")
