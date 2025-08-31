@@ -12,6 +12,7 @@ app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 # Get database paths from environment variables
 DB_PATH = os.getenv("DB_PATH", "places.db")  # fallback for local development
 CHROMA_PATH = os.getenv("CHROMA_PATH", "places_vector_db")  # fallback for local development
+root = os.getenv("RAILWAY_VOLUME_MOUNT_PATH", "/")
 
 # Copy seed databases to volume if they don't exist (Railway setup)
 
@@ -59,7 +60,10 @@ async def chat(request: ChatRequest, api_key: str = Depends(verify_api_key)):
 
     try:
         # Use the async conversational agent
-        response = await agent.chat(request.query, session_id="default")
+        # Print contents of current directory
+        current_dir = os.listdir()
+        print("Current directory contents:", current_dir)
+        response = ""  # await agent.chat(request.query, session_id="default")
         return {"response": response}
     except Exception as e:
         print(f"Error in chat endpoint: {e}")
