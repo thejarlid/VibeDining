@@ -276,12 +276,14 @@ QUALITY CONTROL:
 - Be transparent about data gaps and suggest that more places could be found with web search
 
 RESPONSE FORMAT when you have good results:
-Present as numbered list with:
-- **Name**
-- **Rating** 
-- **Address**
-- **Price Level**
-- **Description**
+Present as numbered list in markdown format:
+ ## [number]. Name
+ **Rating**: [rating]
+ **Address**: [address which is a hyperlink to the google maps page for the restaurant]
+ **Price Level**: [price level]
+ **Atmosphere**: [atmosphere]
+ **Description**: [description]
+ **Brief blurb with some highlights and aspects of the reviews that are relevant to the user's query**
 
 RESPONSE FORMAT when data is limited:
 "I found [X] places in your saved lists that match your criteria, but the selection is limited. Here's what I found:
@@ -295,32 +297,29 @@ Find multiple options that match the user's query and return them in the followi
 Example:
 User Query: "I want to find a sushi restaurant for a romantic date night"
 
-1. **Sushi Noz**
-- **Address:** 181 E 78th St, New York, NY 10075
-- **Price Level:** $100+
-- **Rating:** 4.5
-- **Description:** Zen-like outlet for high-end, seasonal sushi & nigiri, served omakase-only in a wood-lined space.
-- **Atmosphere:** Cozy and upscale, perfect for intimate meals. Reservations are required.
-- **Neighborhood:** Upper East Side, New York City
-- **Summarized Description:** Zen-like outlet for high-end, seasonal sushi & nigiri, served omakase-only in a wood-lined space.
+ ## 1. Sushi Noz
+ **Rating**: 4.5
+ **Address**: [181 E 78th St, New York, NY 10075](https://www.google.com/maps/place/Sushi+Noz/@40.7756818,-73.967088,17z/data=!3m1!4b1!4m6!3m5!1s0x89c258e9b088de1f:0x54dd4edf166b2029!8m2!3d40.7756818!4d-73.9648993!16s%2Fg%2F11tc34j7nm?entry=ttu&g_ep=EgoyMDI1MDIxLjAaASNCCHJlc3R3YWxrX2VwaWRzMAEaCAhpbXBvcnRhbnQ%3D)
+ **Price Level**: $100+
+ **Atmosphere**: Cozy and upscale, perfect for intimate meals. Reservations are required.
+ **Description**: Zen-like outlet for high-end, seasonal sushi & nigiri, served omakase-only in a wood-lined space.
+ *Brief blurb with some highlights and aspects of the reviews that are relevant to the user's query*
 
-2. **Neta Shari**
-- **Address:** 1718 86th St, Brooklyn, NY 11214
-- **Price Level:** $100+
-- **Rating:** 4.7
-- **Description:** Specializes in exquisite omakase, with highlights like king salmon and wagyu.
-- **Atmosphere:** Cozy and trendy with a quiet environment. Reservations are required.
-- **Neighborhood:** Bath Beach, New York City
-- **Summarized Description:** Specializes in exquisite omakase, with highlights like king salmon and wagyu.
+ ## 2. Neta Shari
+ **Rating**: 4.7
+ **Address**: [1718 86th St, Brooklyn, NY 11214](https://www.google.com/maps/place/Neta+Shari/@40.624743,-73.9770389,17z/data=!3m1!4b1!4m6!3m5!1s0x89c258f785f04bd1:0x47cf3ce220654a32!8m2!3d40.624743!4d-73.9748452!16s%2Fg%2F11c2gphkrb?entry=ttu&g_ep=EgoyMDI1MDIxLjAaASNCCHJlc3R3YWxrX2VwaWRzMAEaCAhpbXBvcnRhbnQ%3D)
+ **Price Level**: $100+
+ **Atmosphere**: Cozy and trendy with a quiet environment. Reservations are required.
+ **Description**: Specializes in exquisite omakase, with highlights like king salmon and wagyu.
+ *Brief blurb with some highlights and aspects of the reviews that are relevant to the user's query*
 
-3. **BONDST**
-- **Address:** 6 Bond St, New York, NY 10012
-- **Price Level:** $100+
-- **Rating:** 4.5
-- **Description:** High-end sushi & Japanese dishes in a chic, trendy atmosphere.
-- **Atmosphere:** Romantic, upscale, and trendy, with a well-heeled crowd. Reservations are recommended.
-- **Neighborhood:** NoHo, New York City
-- **Description:** High-end sushi & Japanese dishes in a chic, trendy atmosphere. Romantic, upscale, and trendy, with a well-heeled crowd. Reservations are recommended.
+ ## 3. BONDST
+ **Rating**: 4.5
+ **Address**: [6 Bond St, New York, NY 10012](https://www.google.com/maps/place/BONDST/@40.7260454,-73.9961442,17z/data=!3m1!4b1!4m6!3m5!1s0x89c258e92584b10d:0x595ffa38ce68502d!8m2!3d40.7260454!4d-73.9939505!16s%2Fg%2F11c283_1_h?entry=ttu&g_ep=EgoyMDI1MDIxLjAaASNCCHJlc3R3YWxrX2VwaWRzMAEaCAhpbXBvcnRhbnQ%3D)
+ **Price Level**: $100+
+ **Atmosphere**: Romantic, upscale, and trendy, with a well-heeled crowd. Reservations are recommended.
+ **Description**: High-end sushi & Japanese dishes in a chic, trendy atmosphere. Romantic, upscale, and trendy, with a well-heeled crowd. Reservations are recommended.
+ *Brief blurb with some highlights and aspects of the reviews that are relevant to the user's query*
 
 You can make multiple tool calls, analyze results, and make additional calls as needed.
 """
