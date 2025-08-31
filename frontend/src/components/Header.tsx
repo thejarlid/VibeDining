@@ -6,7 +6,7 @@ export default function Header({ onNewChat }: HeaderProps) {
   return (
     <header className="header-container">
       <div className="header-logo">
-        <h1 className="header-title">
+        <h1 className="header-title" onClick={onNewChat} style={{ cursor: 'pointer' }}>
           VibeDine
         </h1>
       </div>

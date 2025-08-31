@@ -1,25 +1,27 @@
-# VibeDining - Intelligent Restaurant Recommendation System
+# VibeDining - AI-Powered Restaurant Recommendation Platform
 
 ## Overview
 
-VibeDining is a comprehensive restaurant recommendation system that combines data scraping, intelligent indexing, and agentic search to provide personalized dining recommendations. The system processes user-saved restaurant lists and uses multi-modal search techniques to understand both explicit constraints and qualitative preferences.
+VibeDining is a full-stack intelligent restaurant recommendation platform that combines advanced AI agents with modern web technologies. The system processes user-saved restaurant data and provides personalized dining recommendations through natural language conversations.
+
+**Architecture**: Next.js + TypeScript frontend with Python FastAPI backend powered by LangGraph agents and vector search.
 
 ## 🏗️ System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                           VibeDining System                              │
+│                       VibeDining Full-Stack Platform                    │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                 │
-│  │   SCRAPING  │───▶│   INDEXING  │───▶│ AGENTIC AI  │                 │
-│  │   PIPELINE  │    │   SYSTEM    │    │ RECOMMENDER │                 │
+│  │  NEXT.JS    │◀──▶│  FASTAPI    │───▶│ LANGGRAPH   │                 │
+│  │  FRONTEND   │    │  BACKEND    │    │   AGENTS    │                 │
 │  └─────────────┘    └─────────────┘    └─────────────┘                 │
 │                                                                         │
-│  • Google Takeout    • SQLite +       • LangGraph Agent               │
-│  • Web Scraping      Vector Store     • Multi-tool Search             │
-│  • Place Data        • Neighborhoods  • Quality Validation            │
-│  • API Integration   • Semantic Index • Natural Language             │
+│  • React + TS        • REST APIs       • Conversational AI            │
+│  • Tailwind CSS     • WebSocket Chat   • Vector Search                │
+│  • Chat Interface   • Session Mgmt     • Multi-tool Agents            │
+│  • Real-time UI     • FastAPI Docs     • Quality Validation           │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -410,46 +412,52 @@ User Input → Guardrail → Multi-Tool Search → Quality Validation → Respon
 
 ---
 
-## 🛠️ Setup & Usage
+## 🛠️ Quick Start
 
-### Dependencies
+### Prerequisites
+- Node.js 18+ and npm
+- Python 3.11+
+- OpenAI API key
+
+### 1. Clone and Install
 ```bash
+git clone <repository-url>
+cd vibedining
+
+# Frontend setup
+cd frontend
+npm install
+
+# Backend setup  
+cd ../backend
 pip install -r requirements.txt
 ```
 
-### Configuration
-```python
-# Required environment variables
+### 2. Environment Configuration
+```bash
+# Backend (.env in /backend/)
 OPENAI_API_KEY=your_openai_key
-GOOGLE_MAPS_API_KEY=your_google_maps_key  # For basic fields only
+GOOGLE_MAPS_API_KEY=your_google_maps_key
+
+# Frontend (.env.local in /frontend/)
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-### Usage Examples
+### 3. Run the Application
+```bash
+# Terminal 1: Start backend
+cd backend
+python main.py
 
-#### Scraping
-```python
-from src.scraping_pipeline import ScrapingPipeline
-
-pipeline = ScrapingPipeline()
-await pipeline.process_csv_file("my_saved_places.csv")
+# Terminal 2: Start frontend  
+cd frontend
+npm run dev
 ```
 
-#### Indexing  
-```python
-from src.indexer import Indexer
-
-indexer = Indexer(db_path='places.db', chroma_path='places_vector_db')
-indexer.index_csv('scraped_places.csv')
-```
-
-#### Recommendations
-```python
-from src.simple_agent import AgenticRecommender
-
-agent = AgenticRecommender(debug=True)
-response = agent.query("Find me a romantic Italian restaurant in East Village")
-print(response)
-```
+### 4. Access the Platform
+- **Frontend**: http://localhost:3000
+- **API Docs**: http://localhost:8000/docs
+- **Chat Interface**: Natural language restaurant queries
 
 ---
 
@@ -476,16 +484,35 @@ print(response)
 
 ```
 vibedining/
-├── src/
-│   ├── scraping_pipeline.py     # Data extraction pipeline
-│   ├── indexer.py              # Dual storage system
-│   ├── simple_agent.py         # Agentic recommender
-│   ├── query.py               # Alternative graph-based agent
-│   └── model.py               # Data models
-├── places.db                  # SQLite database
-├── places_vector_db/          # ChromaDB vector store
-├── requirements.txt           # Dependencies
-└── README.md                 # This file
+├── frontend/                   # Next.js + TypeScript frontend
+│   ├── src/
+│   │   ├── app/               # Next.js app router
+│   │   │   ├── api/           # API route handlers
+│   │   │   ├── layout.tsx     # Root layout
+│   │   │   └── page.tsx       # Home page
+│   │   ├── components/        # React components
+│   │   │   ├── ChatInterface.tsx
+│   │   │   ├── ChatInput.tsx
+│   │   │   ├── MessageList.tsx
+│   │   │   └── Header.tsx
+│   │   ├── hooks/             # Custom React hooks
+│   │   └── lib/               # Utility functions
+│   ├── package.json
+│   └── README.md              # Frontend-specific docs
+│
+├── backend/                   # FastAPI + Python backend
+│   ├── main.py               # FastAPI server
+│   ├── simple_conversational_agent.py  # LangGraph agents
+│   ├── indexer.py            # Data indexing system
+│   ├── model.py              # Data models
+│   ├── places.db             # SQLite database
+│   ├── places_vector_db/     # ChromaDB vector store
+│   ├── requirements.txt      # Python dependencies
+│   └── README.md             # Backend-specific docs
+│
+├── cli_e2e/                  # End-to-end CLI tools
+├── README.md                 # This file (overview)
+└── requirements.txt          # Root dependencies
 ```
 
 ---
