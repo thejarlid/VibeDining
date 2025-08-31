@@ -21,6 +21,17 @@ print(f"root: {root}")
 print(f"os.getcwd(): {os.getcwd()}")
 print(f"os.listdir(): {os.listdir()}")
 print(f"os.listdir(root): {os.listdir(root)}")
+# Print number of rows in places table
+try:
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM Places")
+    row_count = cursor.fetchone()[0]
+    print(f"Number of rows in Places table: {row_count}")
+    conn.close()
+except Exception as e:
+    print(f"Error getting row count: {e}")
 
 
 # Copy seed databases to volume if they don't exist (Railway setup)
