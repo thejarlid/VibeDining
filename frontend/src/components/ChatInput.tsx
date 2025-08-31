@@ -15,7 +15,11 @@ export default function ChatInput({ onSendMessage, disabled, isInitial = false }
   const adjustTextareaHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+      const scrollHeight = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = `${Math.min(scrollHeight, 200)}px`;
+      
+      // Show scroll bar only when content exceeds max height
+      textareaRef.current.style.overflowY = scrollHeight > 200 ? 'auto' : 'hidden';
     }
   };
 
@@ -29,6 +33,7 @@ export default function ChatInput({ onSendMessage, disabled, isInitial = false }
       textareaRef.current.focus();
     }
   }, [disabled]);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
