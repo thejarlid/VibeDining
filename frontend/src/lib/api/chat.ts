@@ -12,7 +12,7 @@ export interface SendMessageRequest {
 }
 
 export interface SendMessageResponse {
-    response: string;
+    message: ChatMessage;
     session_id: string;
 }
 
@@ -66,9 +66,15 @@ export const sendMessage = async (request: SendMessageRequest): Promise<SendMess
         }
 
         const data = await response.json();
-        console.log('data', data); // TODO: remove this
+
+        // Convert timestamp string back to Date object if needed
+        const message = {
+            ...data.message,
+            timestamp: new Date(data.message.timestamp)
+        };
+
         return {
-            response: data.response,
+            message,
             session_id: data.session_id
         };
     } catch (error) {

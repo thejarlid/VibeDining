@@ -56,16 +56,15 @@ export async function POST(request: NextRequest) {
 
         const data = await response.json();
 
-        // Transform the response if needed
+        // Return fully formed ChatMessage object
         return NextResponse.json({
             message: {
                 id: Date.now().toString(),
-                content: data.response || data.message || 'No response from backend',
-                sender: 'assistant',
-                timestamp: new Date().toISOString(),
+                content: data.response || 'No response from backend',
+                sender: 'assistant' as const,
+                timestamp: new Date(), // Frontend expects Date object, not string
             },
-            // Include any additional data from your backend
-            ...data,
+            session_id: data.session_id,
         });
 
     } catch (error) {

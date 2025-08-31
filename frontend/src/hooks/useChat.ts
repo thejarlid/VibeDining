@@ -31,15 +31,8 @@ export const useChat = () => {
                 setSessionId(response.session_id);
             }
 
-            // Add assistant message from API response
-            const assistantMessage: ChatMessage = {
-                id: (Date.now() + 1).toString(),
-                content: response.response,
-                sender: 'assistant',
-                timestamp: new Date(),
-            };
-
-            setMessages(prev => [...prev, assistantMessage]);
+            // Add the pre-formed assistant message from API
+            setMessages(prev => [...prev, response.message]);
         } catch (err) {
             const errorMessage = err instanceof ChatAPIError
                 ? err.message
