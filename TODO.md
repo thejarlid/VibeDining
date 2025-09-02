@@ -4,9 +4,12 @@
 [] scraping api
 [] setup indexing on supabase with pgvector
 [] Add data freshness
-[] web api 
+[] web search tool
 [] More deterministic graph-based agent
 [] Need to make agent faster -> retrieval is too slow
+[] Get user's current location to help with ambiguoius requests
+[] Stream responses back to the user so that its not just waiting 
+    [] Ideally also print out the thinking path/plan so they know what's happening
 
 
 ## Longterm backlog
