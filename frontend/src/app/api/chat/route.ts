@@ -38,6 +38,8 @@ export async function POST(request: NextRequest) {
             },
             body: JSON.stringify({
                 query: body.content,
+                session_id: body.session_id,
+                location_context: body.location_context,
             }),
             signal: controller.signal,
         });

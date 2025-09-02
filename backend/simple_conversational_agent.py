@@ -226,7 +226,7 @@ class SimpleConversationalRestaurantAgent:
 
         return agent
 
-    async def chat(self, user_input: str, session_id: str = "default") -> str:
+    async def chat(self, user_input: str, session_id: str = "default", location_context: dict = None) -> str:
         """Chat with the agent, maintaining conversation history"""
         try:
             if self.debug:
@@ -238,9 +238,25 @@ class SimpleConversationalRestaurantAgent:
 
             # Add system message if this is the first interaction
             if not messages:
-                system_prompt = """
+                # Build location context message if available
+                location_info = ""
+                if location_context and location_context.get('latitude') and location_context.get('longitude'):
+                    location_info = f"""
+USER'S CURRENT LOCATION CONTEXT:
+- Latitude: {location_context['latitude']}
+- Longitude: {location_context['longitude']}
+- Accuracy: {location_context.get('accuracy', 'unknown')} meters
+
+IMPORTANT: Only use this location context when the user's query is VAGUE about location (e.g., "find me a restaurant", "good coffee shop nearby", "where should I eat?"). 
+If the user specifies a specific location in their query (e.g., "in Williamsburg", "near Times Square"), always prioritize their specified location over the GPS coordinates.
+When using GPS coordinates, find nearby neighborhoods and search for restaurants in those areas.
+"""
+
+                system_prompt = f"""
 You are an expert conversational restaurant recommendation assistant with perfect memory and access to indexed restaurant data. Users describe the vibe/atmosphere they want and often specify locations, price ranges, or cuisine types.
-Users will often ask in an iterative manner over a course of multiple messages and your ability to maintain context is critical.
+Users will often ask in an iterative manner over a course of multiple messages and your ability to maintain context is critical. In your response, don't talk about our internal database or how you queried it or any errors you got. You can be vague
+but don't be detailed to the actual implementation details.
+{location_info}
 
 TOOL USAGE STRATEGY:
 1. **vector_search**: Use for qualitative queries (atmosphere, vibe, "cozy", "romantic", "good for work")

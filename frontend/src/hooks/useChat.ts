@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { sendMessage, endSession, ChatMessage, ChatAPIError } from '../lib/api/chat';
+import { sendMessage, endSession, ChatMessage, ChatAPIError, LocationContext } from '../lib/api/chat';
 
 export const useChat = () => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -7,7 +7,7 @@ export const useChat = () => {
     const [error, setError] = useState<string | null>(null);
     const [sessionId, setSessionId] = useState<string | null>(null);
 
-    const sendChatMessage = useCallback(async (content: string) => {
+    const sendChatMessage = useCallback(async (content: string, locationContext?: LocationContext | null) => {
         // Add user message immediately for better UX
         const userMessage: ChatMessage = {
             id: Date.now().toString(),
@@ -23,7 +23,8 @@ export const useChat = () => {
         try {
             const response = await sendMessage({
                 content,
-                session_id: sessionId || undefined
+                session_id: sessionId || undefined,
+                location_context: locationContext || undefined
             });
 
             // Update session ID if this was the first message

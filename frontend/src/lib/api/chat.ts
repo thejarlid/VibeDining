@@ -6,9 +6,16 @@ export interface ChatMessage {
     timestamp: Date;
 }
 
+export interface LocationContext {
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+}
+
 export interface SendMessageRequest {
     content: string;
     session_id?: string;
+    location_context?: LocationContext;
 }
 
 export interface SendMessageResponse {
@@ -53,7 +60,8 @@ export const sendMessage = async (request: SendMessageRequest): Promise<SendMess
             },
             body: JSON.stringify({
                 content: request.content,
-                session_id: request.session_id
+                session_id: request.session_id,
+                location_context: request.location_context
             }),
         });
 

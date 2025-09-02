@@ -5,21 +5,26 @@ import Header from './Header';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import { useChat } from '../hooks/useChat';
+import { useGeolocation } from '../hooks/useGeolocation';
 
 export default function ChatInterface() {
   const { messages, isLoading, error, sendChatMessage, clearMessages } = useChat();
+  const { getLocationContext } = useGeolocation(true, 1500); // 5 second delay
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleSendMessage = async (content: string) => {
+    // Get current location context
+    const locationContext = getLocationContext();
+
     // Start transition animation of the pill box down if this is the first message
     if (messages.length === 0) {
       setIsTransitioning(true);
       // Add the message after a short delay to allow animation to start
       setTimeout(() => {
-        sendChatMessage(content);
+        sendChatMessage(content, locationContext);
       }, 100);
     } else {
-      sendChatMessage(content);
+      sendChatMessage(content, locationContext);
     }
   };
 

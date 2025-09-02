@@ -58,9 +58,16 @@ async def verify_api_key(x_api_key: str = Header(None)):
     return x_api_key
 
 
+class LocationContext(BaseModel):
+    latitude: float
+    longitude: float
+    accuracy: float
+
+
 class ChatRequest(BaseModel):
     query: str
     session_id: Optional[str] = None
+    location_context: Optional[LocationContext] = None
 
 
 class SessionResponse(BaseModel):
@@ -105,7 +112,9 @@ async def chat(request: ChatRequest, api_key: str = Depends(verify_api_key)):
         cleanup_old_sessions()
 
     try:
-        response = await agent.chat(request.query, session_id=session_id)
+        # Pass location context to agent if provided
+        location_context = request.location_context.model_dump() if request.location_context else None
+        response = await agent.chat(request.query, session_id=session_id, location_context=location_context)
         return {
             "response": response,
             "session_id": session_id
