@@ -18,6 +18,7 @@ distro==1.9.0
 dnspython==2.7.0
 durationpy==0.10
 email-validator==2.3.0
+exa-py==1.15.4
 fastapi==0.116.1
 fastapi-cli==0.0.8
 fastapi-cloud-cli==0.1.5
