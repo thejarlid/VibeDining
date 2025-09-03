@@ -54,7 +54,7 @@ export const useChat = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [sessionId]);
 
     const clearMessages = useCallback(async () => {
         // Clean up current session before starting new one
