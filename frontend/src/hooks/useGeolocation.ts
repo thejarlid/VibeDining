@@ -25,6 +25,7 @@ export const useGeolocation = (enableHighAccuracy: boolean = true, delayMs: numb
 
   useEffect(() => {
     let watchId: number | undefined;
+    let timeoutId: NodeJS.Timeout;
 
     if (!navigator.geolocation) {
       setLocation({
@@ -85,13 +86,15 @@ export const useGeolocation = (enableHighAccuracy: boolean = true, delayMs: numb
     };
 
     // Add delay before requesting location permission
-    const timeoutId = setTimeout(requestLocation, delayMs);
+    timeoutId = setTimeout(requestLocation, delayMs);
 
     return () => {
       if (watchId) {
         navigator.geolocation.clearWatch(watchId);
       }
-      clearTimeout(timeoutId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [enableHighAccuracy, delayMs]);
 
