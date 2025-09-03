@@ -10,7 +10,7 @@
 [x] Get user's current location to help with ambiguoius requests
 [] Stream responses back to the user so that its not just waiting 
     [] Ideally also print out the thinking path/plan so they know what's happening
-
+[] return structured output/json instead of responding with a markdown message that is then printed. A structured output would allow us to format things on the frontend nicely and also then make a map interface
 
 ## Longterm backlog
 [] Add ability to have users
